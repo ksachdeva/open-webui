@@ -5,11 +5,6 @@
 	import { createEventDispatcher, onMount, getContext, tick } from 'svelte';
 
 	import {
-		getUserValvesSpecById as getToolUserValvesSpecById,
-		getUserValvesById as getToolUserValvesById,
-		updateUserValvesById as updateToolUserValvesById
-	} from '$lib/apis/tools';
-	import {
 		getUserValvesSpecById as getFunctionUserValvesSpecById,
 		getUserValvesById as getFunctionUserValvesById,
 		updateUserValvesById as updateFunctionUserValvesById

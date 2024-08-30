@@ -10,7 +10,6 @@
 	import { getModels as _getModels } from '$lib/apis';
 	import { getAllChatTags } from '$lib/apis/chats';	
 	
-	import { getTools } from '$lib/apis/tools';
 
 	import { getBanners } from '$lib/apis/configs';
 	import { getUserSettings } from '$lib/apis/users';
@@ -92,9 +91,7 @@
 					models.set(await getModels());
 				})(),
 				
-				(async () => {
-					tools.set(await getTools(localStorage.token));
-				})(),
+				
 				(async () => {
 					functions.set(await getFunctions(localStorage.token));
 				})(),
