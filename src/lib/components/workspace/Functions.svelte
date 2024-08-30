@@ -5,7 +5,7 @@
 
 	import { WEBUI_NAME, functions, models } from '$lib/stores';
 	import { onMount, getContext, tick } from 'svelte';
-	import { createNewPrompt, deletePromptByCommand, getPrompts } from '$lib/apis/prompts';
+	
 
 	import { goto } from '$app/navigation';
 	import {
