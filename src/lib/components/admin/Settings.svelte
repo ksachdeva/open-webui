@@ -257,12 +257,7 @@
 					toast.success($i18n.t('Settings saved successfully!'));
 				}}
 			/>
-		{:else if selectedTab === 'images'}
-			<Images
-				on:save={() => {
-					toast.success($i18n.t('Settings saved successfully!'));
-				}}
-			/>
+		
 		{:else if selectedTab === 'db'}
 			<Database
 				saveHandler={() => {

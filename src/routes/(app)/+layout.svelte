@@ -32,7 +32,7 @@
 	import SettingsModal from '$lib/components/chat/SettingsModal.svelte';
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';	
 	import AccountPending from '$lib/components/layout/Overlay/AccountPending.svelte';
-	import { getFunctions } from '$lib/apis/functions';
+	
 	import { page } from '$app/stores';
 
 	const i18n = getContext('i18n');
@@ -89,12 +89,9 @@
 			await Promise.all([
 				(async () => {
 					models.set(await getModels());
-				})(),
+				})(),			
 				
 				
-				(async () => {
-					functions.set(await getFunctions(localStorage.token));
-				})(),
 				(async () => {
 					banners.set(await getBanners(localStorage.token));
 				})(),

@@ -5,7 +5,7 @@
 
 	import XMark from '$lib/components/icons/XMark.svelte';
 	import AdvancedParams from '../Settings/Advanced/AdvancedParams.svelte';
-	import Valves from '$lib/components/chat/Controls/Valves.svelte';
+	
 	import FileItem from '$lib/components/common/FileItem.svelte';
 	import Collapsible from '$lib/components/common/Collapsible.svelte';
 
@@ -52,13 +52,7 @@
 			</Collapsible>
 
 			<hr class="my-2 border-gray-100 dark:border-gray-800" />
-		{/if}
-
-		<Collapsible title={$i18n.t('Valves')}>
-			<div class="text-sm mt-1.5" slot="content">
-				<Valves />
-			</div>
-		</Collapsible>
+		{/if}	
 
 		<hr class="my-2 border-gray-100 dark:border-gray-800" />
 
