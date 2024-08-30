@@ -61,24 +61,6 @@
 				>
 
 				<a
-					class="min-w-fit rounded-lg p-1.5 px-3 {$page.url.pathname.includes('/workspace/prompts')
-						? 'bg-gray-50 dark:bg-gray-850'
-						: ''} transition"
-					href="/workspace/prompts">{$i18n.t('Prompts')}</a
-				>
-
-				<a
-					class="min-w-fit rounded-lg p-1.5 px-3 {$page.url.pathname.includes(
-						'/workspace/documents'
-					)
-						? 'bg-gray-50 dark:bg-gray-850'
-						: ''} transition"
-					href="/workspace/documents"
-				>
-					{$i18n.t('Documents')}
-				</a>
-
-				<a
 					class="min-w-fit rounded-lg p-1.5 px-3 {$page.url.pathname.includes('/workspace/tools')
 						? 'bg-gray-50 dark:bg-gray-850'
 						: ''} transition"

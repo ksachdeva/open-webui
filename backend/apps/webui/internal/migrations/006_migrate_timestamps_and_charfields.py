@@ -42,18 +42,12 @@ def migrate(migrator: Migrator, database: pw.Database, *, fake=False):
         "chatidtag",
         timestamp=pw.BigIntegerField(),
     )
-    migrator.change_fields(
-        "document",
-        timestamp=pw.BigIntegerField(),
-    )
+
     migrator.change_fields(
         "modelfile",
         timestamp=pw.BigIntegerField(),
     )
-    migrator.change_fields(
-        "prompt",
-        timestamp=pw.BigIntegerField(),
-    )
+
     migrator.change_fields(
         "user",
         timestamp=pw.BigIntegerField(),
@@ -67,15 +61,7 @@ def migrate(migrator: Migrator, database: pw.Database, *, fake=False):
         "chat",
         title=pw.TextField(),
     )
-    migrator.change_fields(
-        "document",
-        title=pw.TextField(),
-        filename=pw.TextField(),
-    )
-    migrator.change_fields(
-        "prompt",
-        title=pw.TextField(),
-    )
+
     migrator.change_fields(
         "user",
         profile_image_url=pw.TextField(),
@@ -92,15 +78,7 @@ def rollback(migrator: Migrator, database: pw.Database, *, fake=False):
             timestamp=pw.DateField(),
         )
         migrator.change_fields(
-            "document",
-            timestamp=pw.DateField(),
-        )
-        migrator.change_fields(
             "modelfile",
-            timestamp=pw.DateField(),
-        )
-        migrator.change_fields(
-            "prompt",
             timestamp=pw.DateField(),
         )
         migrator.change_fields(
@@ -113,15 +91,6 @@ def rollback(migrator: Migrator, database: pw.Database, *, fake=False):
     )
     migrator.change_fields(
         "chat",
-        title=pw.CharField(),
-    )
-    migrator.change_fields(
-        "document",
-        title=pw.CharField(),
-        filename=pw.CharField(),
-    )
-    migrator.change_fields(
-        "prompt",
         title=pw.CharField(),
     )
     migrator.change_fields(

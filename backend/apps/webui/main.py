@@ -5,13 +5,10 @@ from apps.webui.routers import (
     auths,
     users,
     chats,
-    documents,
     tools,
     models,
-    prompts,
     configs,
     utils,
-    files,
     functions,
 )
 from apps.webui.models.functions import Functions
@@ -109,12 +106,10 @@ app.include_router(auths.router, prefix="/auths", tags=["auths"])
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(chats.router, prefix="/chats", tags=["chats"])
 
-app.include_router(documents.router, prefix="/documents", tags=["documents"])
+
 app.include_router(models.router, prefix="/models", tags=["models"])
-app.include_router(prompts.router, prefix="/prompts", tags=["prompts"])
 
 
-app.include_router(files.router, prefix="/files", tags=["files"])
 app.include_router(tools.router, prefix="/tools", tags=["tools"])
 app.include_router(functions.router, prefix="/functions", tags=["functions"])
 

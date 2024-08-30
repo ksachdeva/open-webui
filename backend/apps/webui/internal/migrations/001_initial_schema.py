@@ -82,20 +82,6 @@ def migrate_sqlite(migrator: Migrator, database: pw.Database, *, fake=False):
             table_name = "chatidtag"
 
     @migrator.create_model
-    class Document(pw.Model):
-        id = pw.AutoField()
-        collection_name = pw.CharField(max_length=255, unique=True)
-        name = pw.CharField(max_length=255, unique=True)
-        title = pw.CharField()
-        filename = pw.CharField()
-        content = pw.TextField(null=True)
-        user_id = pw.CharField(max_length=255)
-        timestamp = pw.BigIntegerField()
-
-        class Meta:
-            table_name = "document"
-
-    @migrator.create_model
     class Modelfile(pw.Model):
         id = pw.AutoField()
         tag_name = pw.CharField(max_length=255, unique=True)
@@ -105,18 +91,6 @@ def migrate_sqlite(migrator: Migrator, database: pw.Database, *, fake=False):
 
         class Meta:
             table_name = "modelfile"
-
-    @migrator.create_model
-    class Prompt(pw.Model):
-        id = pw.AutoField()
-        command = pw.CharField(max_length=255, unique=True)
-        user_id = pw.CharField(max_length=255)
-        title = pw.CharField()
-        content = pw.TextField()
-        timestamp = pw.BigIntegerField()
-
-        class Meta:
-            table_name = "prompt"
 
     @migrator.create_model
     class Tag(pw.Model):
@@ -175,20 +149,6 @@ def migrate_external(migrator: Migrator, database: pw.Database, *, fake=False):
             table_name = "chatidtag"
 
     @migrator.create_model
-    class Document(pw.Model):
-        id = pw.AutoField()
-        collection_name = pw.CharField(max_length=255, unique=True)
-        name = pw.CharField(max_length=255, unique=True)
-        title = pw.TextField()
-        filename = pw.TextField()
-        content = pw.TextField(null=True)
-        user_id = pw.CharField(max_length=255)
-        timestamp = pw.BigIntegerField()
-
-        class Meta:
-            table_name = "document"
-
-    @migrator.create_model
     class Modelfile(pw.Model):
         id = pw.AutoField()
         tag_name = pw.CharField(max_length=255, unique=True)
@@ -198,18 +158,6 @@ def migrate_external(migrator: Migrator, database: pw.Database, *, fake=False):
 
         class Meta:
             table_name = "modelfile"
-
-    @migrator.create_model
-    class Prompt(pw.Model):
-        id = pw.AutoField()
-        command = pw.CharField(max_length=255, unique=True)
-        user_id = pw.CharField(max_length=255)
-        title = pw.TextField()
-        content = pw.TextField()
-        timestamp = pw.BigIntegerField()
-
-        class Meta:
-            table_name = "prompt"
 
     @migrator.create_model
     class Tag(pw.Model):
@@ -241,11 +189,7 @@ def rollback(migrator: Migrator, database: pw.Database, *, fake=False):
 
     migrator.remove_model("tag")
 
-    migrator.remove_model("prompt")
-
     migrator.remove_model("modelfile")
-
-    migrator.remove_model("document")
 
     migrator.remove_model("chatidtag")
 

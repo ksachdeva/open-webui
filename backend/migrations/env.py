@@ -8,14 +8,13 @@ from alembic import context
 
 from apps.webui.models.auths import Auth
 from apps.webui.models.chats import Chat
-from apps.webui.models.documents import Document
+
 
 from apps.webui.models.models import Model
-from apps.webui.models.prompts import Prompt
+
 from apps.webui.models.tags import Tag, ChatIdTag
 from apps.webui.models.tools import Tool
 from apps.webui.models.users import User
-from apps.webui.models.files import File
 from apps.webui.models.functions import Function
 
 from env import DATABASE_URL

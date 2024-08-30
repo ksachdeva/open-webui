@@ -7,12 +7,8 @@
 	import { models, settings } from '$lib/stores';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 
-	import { user as _user } from '$lib/stores';
-	import { getFileContentById } from '$lib/apis/files';
-	import FileItem from '$lib/components/common/FileItem.svelte';
-	import { marked } from 'marked';
-	import { processResponseContent, replaceTokens } from '$lib/utils';
-	import MarkdownTokens from './Markdown/MarkdownTokens.svelte';
+	import { user as _user } from '$lib/stores';	
+	import FileItem from '$lib/components/common/FileItem.svelte';	
 	import Markdown from './Markdown.svelte';
 
 	const i18n = getContext('i18n');

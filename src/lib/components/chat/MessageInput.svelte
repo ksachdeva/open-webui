@@ -6,33 +6,22 @@
 	import {
 		type Model,
 		mobile,
-		settings,
-		showSidebar,
+		settings,		
 		models,
 		config,
-		showCallOverlay,
-		tools,
+		showCallOverlay,		
 		user as _user
 	} from '$lib/stores';
-	import { blobToFile, findWordIndices } from '$lib/utils';
+	import {  findWordIndices } from '$lib/utils';	
 
-	import { transcribeAudio } from '$lib/apis/audio';
-	import { processDocToVectorDB } from '$lib/apis/rag';
-	import { uploadFile } from '$lib/apis/files';
-
-	import {
-		SUPPORTED_FILE_TYPE,
-		SUPPORTED_FILE_EXTENSIONS,
+	import {		
 		WEBUI_BASE_URL,
 		WEBUI_API_BASE_URL
 	} from '$lib/constants';
 
-	import Tooltip from '../common/Tooltip.svelte';
-	import InputMenu from './MessageInput/InputMenu.svelte';
+	import Tooltip from '../common/Tooltip.svelte';	
 	import Headphone from '../icons/Headphone.svelte';
-	import VoiceRecording from './MessageInput/VoiceRecording.svelte';
-	import FileItem from '../common/FileItem.svelte';
-	import FilesOverlay from './MessageInput/FilesOverlay.svelte';
+	import VoiceRecording from './MessageInput/VoiceRecording.svelte';	
 	import Commands from './MessageInput/Commands.svelte';
 	import XMark from '../icons/XMark.svelte';
 
@@ -51,24 +40,20 @@
 	let recording = false;
 
 	let chatTextAreaElement: HTMLTextAreaElement;
-	let filesInputElement;
+	
 
 	let commandsElement;
 
-	let inputFiles;
+	
 	let dragged = false;
 
 	let user = null;
-	let chatInputPlaceholder = '';
-
-	export let files = [];
-
-	export let availableToolIds = [];
-	export let selectedToolIds = [];
-	export let webSearchEnabled = false;
+	let chatInputPlaceholder = '';	
 
 	export let prompt = '';
 	export let messages = [];
+	export let availableToolIds = [];
+	export let selectedToolIds = [];
 
 	let visionCapableModels = [];
 	$: visionCapableModels = [...(atSelectedModel ? [atSelectedModel] : selectedModels)].filter(
@@ -90,124 +75,7 @@
 		});
 	};
 
-	const uploadFileHandler = async (file) => {
-		console.log(file);
-
-		// Check if the file is an audio file and transcribe/convert it to text file
-		if (['audio/mpeg', 'audio/wav'].includes(file['type'])) {
-			const res = await transcribeAudio(localStorage.token, file).catch((error) => {
-				toast.error(error);
-				return null;
-			});
-
-			if (res) {
-				console.log(res);
-				const blob = new Blob([res.text], { type: 'text/plain' });
-				file = blobToFile(blob, `${file.name}.txt`);
-			}
-		}
-
-		const fileItem = {
-			type: 'file',
-			file: '',
-			id: null,
-			url: '',
-			name: file.name,
-			collection_name: '',
-			status: '',
-			size: file.size,
-			error: ''
-		};
-		files = [...files, fileItem];
-
-		try {
-			const uploadedFile = await uploadFile(localStorage.token, file);
-
-			if (uploadedFile) {
-				fileItem.status = 'uploaded';
-				fileItem.file = uploadedFile;
-				fileItem.id = uploadedFile.id;
-				fileItem.url = `${WEBUI_API_BASE_URL}/files/${uploadedFile.id}`;
-
-				// TODO: Check if tools & functions have files support to skip this step to delegate file processing
-				// Default Upload to VectorDB
-				if (
-					SUPPORTED_FILE_TYPE.includes(file['type']) ||
-					SUPPORTED_FILE_EXTENSIONS.includes(file.name.split('.').at(-1))
-				) {
-					processFileItem(fileItem);
-				} else {
-					toast.error(
-						$i18n.t(`Unknown file type '{{file_type}}'. Proceeding with the file upload anyway.`, {
-							file_type: file['type']
-						})
-					);
-					processFileItem(fileItem);
-				}
-			} else {
-				files = files.filter((item) => item.status !== null);
-			}
-		} catch (e) {
-			toast.error(e);
-			files = files.filter((item) => item.status !== null);
-		}
-	};
-
-	const processFileItem = async (fileItem) => {
-		try {
-			const res = await processDocToVectorDB(localStorage.token, fileItem.id);
-
-			if (res) {
-				fileItem.status = 'processed';
-				fileItem.collection_name = res.collection_name;
-				files = files;
-			}
-		} catch (e) {
-			// Remove the failed doc from the files array
-			// files = files.filter((f) => f.id !== fileItem.id);
-			toast.error(e);
-			fileItem.status = 'processed';
-			files = files;
-		}
-	};
-
-	const inputFilesHandler = async (inputFiles) => {
-		inputFiles.forEach((file) => {
-			console.log(file, file.name.split('.').at(-1));
-
-			if (
-				($config?.file?.max_size ?? null) !== null &&
-				file.size > ($config?.file?.max_size ?? 0) * 1024 * 1024
-			) {
-				toast.error(
-					$i18n.t(`File size should not exceed {{maxSize}} MB.`, {
-						maxSize: $config?.file?.max_size
-					})
-				);
-				return;
-			}
-
-			if (['image/gif', 'image/webp', 'image/jpeg', 'image/png'].includes(file['type'])) {
-				if (visionCapableModels.length === 0) {
-					toast.error($i18n.t('Selected model(s) do not support image inputs'));
-					return;
-				}
-				let reader = new FileReader();
-				reader.onload = (event) => {
-					files = [
-						...files,
-						{
-							type: 'image',
-							url: `${event.target.result}`
-						}
-					];
-				};
-				reader.readAsDataURL(file);
-			} else {
-				uploadFileHandler(file);
-			}
-		});
-	};
+	
 
 	onMount(() => {
 		window.setTimeout(() => chatTextAreaElement?.focus(), 0);
@@ -228,42 +96,21 @@
 
 		const onDragLeave = () => {
 			dragged = false;
-		};
-
-		const onDrop = async (e) => {
-			e.preventDefault();
-			console.log(e);
-
-			if (e.dataTransfer?.files) {
-				const inputFiles = Array.from(e.dataTransfer?.files);
-				if (inputFiles && inputFiles.length > 0) {
-					console.log(inputFiles);
-					inputFilesHandler(inputFiles);
-				} else {
-					toast.error($i18n.t(`File not found.`));
-				}
-			}
-
-			dragged = false;
-		};
+		};		
 
 		window.addEventListener('keydown', handleKeyDown);
 
-		dropZone?.addEventListener('dragover', onDragOver);
-		dropZone?.addEventListener('drop', onDrop);
+		dropZone?.addEventListener('dragover', onDragOver);		
 		dropZone?.addEventListener('dragleave', onDragLeave);
 
 		return () => {
 			window.removeEventListener('keydown', handleKeyDown);
 
-			dropZone?.removeEventListener('dragover', onDragOver);
-			dropZone?.removeEventListener('drop', onDrop);
+			dropZone?.removeEventListener('dragover', onDragOver);			
 			dropZone?.removeEventListener('dragleave', onDragLeave);
 		};
 	});
 </script>
-
-<FilesOverlay show={dragged} />
 
 <div class="w-full font-primary">
 	<div class=" -mb-0.5 mx-auto inset-x-0 bg-transparent flex justify-center">
@@ -332,8 +179,7 @@
 
 				<Commands
 					bind:this={commandsElement}
-					bind:prompt
-					bind:files
+					bind:prompt					
 					on:select={(e) => {
 						const data = e.detail;
 
@@ -350,24 +196,7 @@
 
 	<div class="{transparentBackground ? 'bg-transparent' : 'bg-white dark:bg-gray-900'} ">
 		<div class="max-w-6xl px-2.5 md:px-6 mx-auto inset-x-0">
-			<div class=" pb-2">
-				<input
-					bind:this={filesInputElement}
-					bind:files={inputFiles}
-					type="file"
-					hidden
-					multiple
-					on:change={async () => {
-						if (inputFiles && inputFiles.length > 0) {
-							const _inputFiles = Array.from(inputFiles);
-							inputFilesHandler(_inputFiles);
-						} else {
-							toast.error($i18n.t(`File not found.`));
-						}
-
-						filesInputElement.value = '';
-					}}
-				/>
+			<div class=" pb-2">				
 
 				{#if recording}
 					<VoiceRecording
@@ -404,120 +233,8 @@
 							class="flex-1 flex flex-col relative w-full rounded-3xl px-1.5 bg-gray-50 dark:bg-gray-850 dark:text-gray-100"
 							dir={$settings?.chatDirection ?? 'LTR'}
 						>
-							{#if files.length > 0}
-								<div class="mx-1 mt-2.5 mb-1 flex flex-wrap gap-2">
-									{#each files as file, fileIdx}
-										{#if file.type === 'image'}
-											<div class=" relative group">
-												<div class="relative">
-													<img
-														src={file.url}
-														alt="input"
-														class=" h-16 w-16 rounded-xl object-cover"
-													/>
-													{#if atSelectedModel ? visionCapableModels.length === 0 : selectedModels.length !== visionCapableModels.length}
-														<Tooltip
-															className=" absolute top-1 left-1"
-															content={$i18n.t('{{ models }}', {
-																models: [...(atSelectedModel ? [atSelectedModel] : selectedModels)]
-																	.filter((id) => !visionCapableModels.includes(id))
-																	.join(', ')
-															})}
-														>
-															<svg
-																xmlns="http://www.w3.org/2000/svg"
-																viewBox="0 0 24 24"
-																fill="currentColor"
-																class="size-4 fill-yellow-300"
-															>
-																<path
-																	fill-rule="evenodd"
-																	d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z"
-																	clip-rule="evenodd"
-																/>
-															</svg>
-														</Tooltip>
-													{/if}
-												</div>
-												<div class=" absolute -top-1 -right-1">
-													<button
-														class=" bg-gray-400 text-white border border-white rounded-full group-hover:visible invisible transition"
-														type="button"
-														on:click={() => {
-															files.splice(fileIdx, 1);
-															files = files;
-														}}
-													>
-														<svg
-															xmlns="http://www.w3.org/2000/svg"
-															viewBox="0 0 20 20"
-															fill="currentColor"
-															class="w-4 h-4"
-														>
-															<path
-																d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"
-															/>
-														</svg>
-													</button>
-												</div>
-											</div>
-										{:else}
-											<FileItem
-												name={file.name}
-												type={file.type}
-												size={file?.size}
-												status={file.status}
-												dismissible={true}
-												on:dismiss={() => {
-													files.splice(fileIdx, 1);
-													files = files;
-												}}
-											/>
-										{/if}
-									{/each}
-								</div>
-							{/if}
-
-							<div class=" flex">
-								<div class=" ml-0.5 self-end mb-1.5 flex space-x-1">
-									<InputMenu
-										bind:webSearchEnabled
-										bind:selectedToolIds
-										tools={$tools.reduce((a, e, i, arr) => {
-											if (availableToolIds.includes(e.id) || ($_user?.role ?? 'user') === 'admin') {
-												a[e.id] = {
-													name: e.name,
-													description: e.meta.description,
-													enabled: false
-												};
-											}
-											return a;
-										}, {})}
-										uploadFilesHandler={() => {
-											filesInputElement.click();
-										}}
-										onClose={async () => {
-											await tick();
-											chatTextAreaElement?.focus();
-										}}
-									>
-										<button
-											class="bg-gray-50 hover:bg-gray-100 text-gray-800 dark:bg-gray-850 dark:text-white dark:hover:bg-gray-800 transition rounded-full p-2 outline-none focus:outline-none"
-											type="button"
-										>
-											<svg
-												xmlns="http://www.w3.org/2000/svg"
-												viewBox="0 0 16 16"
-												fill="currentColor"
-												class="size-5"
-											>
-												<path
-													d="M8.75 3.75a.75.75 0 0 0-1.5 0v3.5h-3.5a.75.75 0 0 0 0 1.5h3.5v3.5a.75.75 0 0 0 1.5 0v-3.5h3.5a.75.75 0 0 0 0-1.5h-3.5v-3.5Z"
-												/>
-											</svg>
-										</button>
-									</InputMenu>
-								</div>
+							
+							<div class=" flex">								
 
 								<textarea
 									id="chat-textarea"
@@ -661,30 +378,7 @@
 										e.target.style.height = '';
 										e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
 									}}
-									on:paste={async (e) => {
-										const clipboardData = e.clipboardData || window.clipboardData;
-
-										if (clipboardData && clipboardData.items) {
-											for (const item of clipboardData.items) {
-												if (item.type.indexOf('image') !== -1) {
-													const blob = item.getAsFile();
-													const reader = new FileReader();
-
-													reader.onload = function (e) {
-														files = [
-															...files,
-															{
-																type: 'image',
-																url: `${e.target.result}`
-															}
-														];
-													};
-
-													reader.readAsDataURL(blob);
-												}
-											}
-										}
-									}}
+									
 								/>
 
 								<div class="self-end mb-2 flex space-x-1 mr-1">

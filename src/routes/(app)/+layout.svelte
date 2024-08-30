@@ -10,10 +10,8 @@
 	import { goto } from '$app/navigation';
 
 	import { getModels as _getModels } from '$lib/apis';
-	import { getAllChatTags } from '$lib/apis/chats';
-
-	import { getPrompts } from '$lib/apis/prompts';
-	import { getDocs } from '$lib/apis/documents';
+	import { getAllChatTags } from '$lib/apis/chats';	
+	
 	import { getTools } from '$lib/apis/tools';
 
 	import { getBanners } from '$lib/apis/configs';
@@ -98,12 +96,7 @@
 				(async () => {
 					models.set(await getModels());
 				})(),
-				(async () => {
-					prompts.set(await getPrompts(localStorage.token));
-				})(),
-				(async () => {
-					documents.set(await getDocs(localStorage.token));
-				})(),
+				
 				(async () => {
 					tools.set(await getTools(localStorage.token));
 				})(),

@@ -45,7 +45,7 @@
 		updateChatById
 	} from '$lib/apis/chats';
 	import { generateOpenAIChatCompletion } from '$lib/apis/openai';
-	import { runWebSearch } from '$lib/apis/rag';
+	
 	import { createOpenAITextStream } from '$lib/apis/streaming';
 	
 	import { getAndUpdateUserLocation, getUserSettings } from '$lib/apis/users';
@@ -708,9 +708,7 @@
 					responseMessage.userContext = userContext;
 
 					const chatEventEmitter = await getChatEventEmitter(model.id, _chatId);
-					if (webSearchEnabled) {
-						await getWebSearchResults(model.id, parentId, responseMessageId);
-					}
+					
 
 					let _response = null;
 					if (model?.owned_by === 'openai') {
@@ -1758,7 +1756,7 @@
 						bind:messages
 						bind:autoScroll
 						bind:prompt
-						bottomPadding={files.length > 0}
+						bottomPadding=false
 						{sendPrompt}
 						{continueGeneration}
 						{regenerateResponse}
@@ -1769,8 +1767,7 @@
 			</div>
 
 			<div class={showControls ? 'lg:pr-[24rem]' : ''}>
-				<MessageInput
-					bind:files
+				<MessageInput					
 					bind:prompt
 					bind:autoScroll
 					bind:selectedToolIds

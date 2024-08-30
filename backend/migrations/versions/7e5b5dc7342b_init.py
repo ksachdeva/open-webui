@@ -60,31 +60,6 @@ def upgrade() -> None:
             sa.PrimaryKeyConstraint("id"),
         )
 
-    if "document" not in existing_tables:
-        op.create_table(
-            "document",
-            sa.Column("collection_name", sa.String(), nullable=False),
-            sa.Column("name", sa.String(), nullable=True),
-            sa.Column("title", sa.Text(), nullable=True),
-            sa.Column("filename", sa.Text(), nullable=True),
-            sa.Column("content", sa.Text(), nullable=True),
-            sa.Column("user_id", sa.String(), nullable=True),
-            sa.Column("timestamp", sa.BigInteger(), nullable=True),
-            sa.PrimaryKeyConstraint("collection_name"),
-            sa.UniqueConstraint("name"),
-        )
-
-    if "file" not in existing_tables:
-        op.create_table(
-            "file",
-            sa.Column("id", sa.String(), nullable=False),
-            sa.Column("user_id", sa.String(), nullable=True),
-            sa.Column("filename", sa.Text(), nullable=True),
-            sa.Column("meta", apps.webui.internal.db.JSONField(), nullable=True),
-            sa.Column("created_at", sa.BigInteger(), nullable=True),
-            sa.PrimaryKeyConstraint("id"),
-        )
-
     if "function" not in existing_tables:
         op.create_table(
             "function",
@@ -114,17 +89,6 @@ def upgrade() -> None:
             sa.Column("updated_at", sa.BigInteger(), nullable=True),
             sa.Column("created_at", sa.BigInteger(), nullable=True),
             sa.PrimaryKeyConstraint("id"),
-        )
-
-    if "prompt" not in existing_tables:
-        op.create_table(
-            "prompt",
-            sa.Column("command", sa.String(), nullable=False),
-            sa.Column("user_id", sa.String(), nullable=True),
-            sa.Column("title", sa.Text(), nullable=True),
-            sa.Column("content", sa.Text(), nullable=True),
-            sa.Column("timestamp", sa.BigInteger(), nullable=True),
-            sa.PrimaryKeyConstraint("command"),
         )
 
     if "tag" not in existing_tables:
@@ -179,11 +143,8 @@ def downgrade() -> None:
     op.drop_table("user")
     op.drop_table("tool")
     op.drop_table("tag")
-    op.drop_table("prompt")
     op.drop_table("model")
     op.drop_table("function")
-    op.drop_table("file")
-    op.drop_table("document")
     op.drop_table("chatidtag")
     op.drop_table("chat")
     op.drop_table("auth")

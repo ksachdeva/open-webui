@@ -41,7 +41,6 @@ from apps.openai.main import (
 
 from apps.audio.main import app as audio_app
 from apps.images.main import app as images_app
-from apps.rag.main import app as rag_app
 from apps.webui.main import (
     app as webui_app,
     get_pipe_models,
@@ -83,7 +82,6 @@ from utils.misc import (
     parse_duration,
 )
 
-from apps.rag.utils import get_rag_context, rag_template
 
 from config import (
     run_migrations,
@@ -785,14 +783,6 @@ async def check_url(request: Request, call_next):
     return response
 
 
-@app.middleware("http")
-async def update_embedding_function(request: Request, call_next):
-    response = await call_next(request)
-    if "/embedding/update" in request.url.path:
-        webui_app.state.EMBEDDING_FUNCTION = rag_app.state.EMBEDDING_FUNCTION
-    return response
-
-
 app.mount("/ws", socket_app)
 
 app.mount("/ollama", ollama_app)
@@ -800,11 +790,9 @@ app.mount("/openai", openai_app)
 
 app.mount("/images/api/v1", images_app)
 app.mount("/audio/api/v1", audio_app)
-app.mount("/rag/api/v1", rag_app)
+
 
 app.mount("/api/v1", webui_app)
-
-webui_app.state.EMBEDDING_FUNCTION = rag_app.state.EMBEDDING_FUNCTION
 
 
 async def get_all_models():
@@ -1914,7 +1902,6 @@ async def get_app_config(request: Request):
             "enable_login_form": webui_app.state.config.ENABLE_LOGIN_FORM,
             **(
                 {
-                    "enable_web_search": rag_app.state.config.ENABLE_RAG_WEB_SEARCH,
                     "enable_image_generation": images_app.state.config.ENABLED,
                     "enable_community_sharing": webui_app.state.config.ENABLE_COMMUNITY_SHARING,
                     "enable_message_rating": webui_app.state.config.ENABLE_MESSAGE_RATING,
@@ -1938,10 +1925,6 @@ async def get_app_config(request: Request):
                     "stt": {
                         "engine": audio_app.state.config.STT_ENGINE,
                     },
-                },
-                "file": {
-                    "max_size": rag_app.state.config.FILE_MAX_SIZE,
-                    "max_count": rag_app.state.config.FILE_MAX_COUNT,
                 },
                 "permissions": {**webui_app.state.config.USER_PERMISSIONS},
             }
