@@ -10,7 +10,6 @@ from apps.webui.routers import (
     models,
     prompts,
     configs,
-    memories,
     utils,
     files,
     functions,
@@ -114,7 +113,7 @@ app.include_router(documents.router, prefix="/documents", tags=["documents"])
 app.include_router(models.router, prefix="/models", tags=["models"])
 app.include_router(prompts.router, prefix="/prompts", tags=["prompts"])
 
-app.include_router(memories.router, prefix="/memories", tags=["memories"])
+
 app.include_router(files.router, prefix="/files", tags=["files"])
 app.include_router(tools.router, prefix="/tools", tags=["tools"])
 app.include_router(functions.router, prefix="/functions", tags=["functions"])

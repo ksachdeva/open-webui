@@ -102,17 +102,6 @@ def upgrade() -> None:
             sa.PrimaryKeyConstraint("id"),
         )
 
-    if "memory" not in existing_tables:
-        op.create_table(
-            "memory",
-            sa.Column("id", sa.String(), nullable=False),
-            sa.Column("user_id", sa.String(), nullable=True),
-            sa.Column("content", sa.Text(), nullable=True),
-            sa.Column("updated_at", sa.BigInteger(), nullable=True),
-            sa.Column("created_at", sa.BigInteger(), nullable=True),
-            sa.PrimaryKeyConstraint("id"),
-        )
-
     if "model" not in existing_tables:
         op.create_table(
             "model",
@@ -192,7 +181,6 @@ def downgrade() -> None:
     op.drop_table("tag")
     op.drop_table("prompt")
     op.drop_table("model")
-    op.drop_table("memory")
     op.drop_table("function")
     op.drop_table("file")
     op.drop_table("document")
