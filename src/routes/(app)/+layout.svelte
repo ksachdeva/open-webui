@@ -1,10 +1,8 @@
-<script lang="ts">
-	import { toast } from 'svelte-sonner';
+<script lang="ts">	
 	import { onMount, tick, getContext } from 'svelte';
 	import { openDB, deleteDB } from 'idb';
 	import fileSaver from 'file-saver';
-	import mermaid from 'mermaid';
-
+	
 	const { saveAs } = fileSaver;
 
 	import { goto } from '$app/navigation';
@@ -21,9 +19,7 @@
 		user,
 		showSettings,
 		settings,
-		models,
-		prompts,
-		documents,
+		models,		
 		tags,
 		banners,
 		showChangelog,
@@ -35,8 +31,7 @@
 	} from '$lib/stores';
 
 	import SettingsModal from '$lib/components/chat/SettingsModal.svelte';
-	import Sidebar from '$lib/components/layout/Sidebar.svelte';
-	import ChangelogModal from '$lib/components/ChangelogModal.svelte';
+	import Sidebar from '$lib/components/layout/Sidebar.svelte';	
 	import AccountPending from '$lib/components/layout/Overlay/AccountPending.svelte';
 	import { getFunctions } from '$lib/apis/functions';
 	import { page } from '$app/stores';
@@ -192,7 +187,7 @@
 </script>
 
 <SettingsModal bind:show={$showSettings} />
-<ChangelogModal bind:show={$showChangelog} />
+
 
 <div class="app relative">
 	<div

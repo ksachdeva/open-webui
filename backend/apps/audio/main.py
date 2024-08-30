@@ -27,10 +27,6 @@ from config import (
     WHISPER_MODEL_DIR,
     WHISPER_MODEL_AUTO_UPDATE,
     DEVICE_TYPE,
-    AUDIO_STT_OPENAI_API_BASE_URL,
-    AUDIO_STT_OPENAI_API_KEY,
-    AUDIO_TTS_OPENAI_API_BASE_URL,
-    AUDIO_TTS_OPENAI_API_KEY,
     AUDIO_TTS_API_KEY,
     AUDIO_STT_ENGINE,
     AUDIO_STT_MODEL,
@@ -62,13 +58,10 @@ app.add_middleware(
 
 app.state.config = AppConfig()
 
-app.state.config.STT_OPENAI_API_BASE_URL = AUDIO_STT_OPENAI_API_BASE_URL
-app.state.config.STT_OPENAI_API_KEY = AUDIO_STT_OPENAI_API_KEY
+
 app.state.config.STT_ENGINE = AUDIO_STT_ENGINE
 app.state.config.STT_MODEL = AUDIO_STT_MODEL
 
-app.state.config.TTS_OPENAI_API_BASE_URL = AUDIO_TTS_OPENAI_API_BASE_URL
-app.state.config.TTS_OPENAI_API_KEY = AUDIO_TTS_OPENAI_API_KEY
 app.state.config.TTS_ENGINE = AUDIO_TTS_ENGINE
 app.state.config.TTS_MODEL = AUDIO_TTS_MODEL
 app.state.config.TTS_VOICE = AUDIO_TTS_VOICE
@@ -84,8 +77,6 @@ SPEECH_CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 class TTSConfigForm(BaseModel):
-    OPENAI_API_BASE_URL: str
-    OPENAI_API_KEY: str
     API_KEY: str
     ENGINE: str
     MODEL: str
@@ -94,8 +85,6 @@ class TTSConfigForm(BaseModel):
 
 
 class STTConfigForm(BaseModel):
-    OPENAI_API_BASE_URL: str
-    OPENAI_API_KEY: str
     ENGINE: str
     MODEL: str
 
@@ -136,8 +125,6 @@ def convert_mp4_to_wav(file_path, output_path):
 async def get_audio_config(user=Depends(get_admin_user)):
     return {
         "tts": {
-            "OPENAI_API_BASE_URL": app.state.config.TTS_OPENAI_API_BASE_URL,
-            "OPENAI_API_KEY": app.state.config.TTS_OPENAI_API_KEY,
             "API_KEY": app.state.config.TTS_API_KEY,
             "ENGINE": app.state.config.TTS_ENGINE,
             "MODEL": app.state.config.TTS_MODEL,
@@ -145,8 +132,6 @@ async def get_audio_config(user=Depends(get_admin_user)):
             "SPLIT_ON": app.state.config.TTS_SPLIT_ON,
         },
         "stt": {
-            "OPENAI_API_BASE_URL": app.state.config.STT_OPENAI_API_BASE_URL,
-            "OPENAI_API_KEY": app.state.config.STT_OPENAI_API_KEY,
             "ENGINE": app.state.config.STT_ENGINE,
             "MODEL": app.state.config.STT_MODEL,
         },
@@ -157,23 +142,18 @@ async def get_audio_config(user=Depends(get_admin_user)):
 async def update_audio_config(
     form_data: AudioConfigUpdateForm, user=Depends(get_admin_user)
 ):
-    app.state.config.TTS_OPENAI_API_BASE_URL = form_data.tts.OPENAI_API_BASE_URL
-    app.state.config.TTS_OPENAI_API_KEY = form_data.tts.OPENAI_API_KEY
+
     app.state.config.TTS_API_KEY = form_data.tts.API_KEY
     app.state.config.TTS_ENGINE = form_data.tts.ENGINE
     app.state.config.TTS_MODEL = form_data.tts.MODEL
     app.state.config.TTS_VOICE = form_data.tts.VOICE
     app.state.config.TTS_SPLIT_ON = form_data.tts.SPLIT_ON
 
-    app.state.config.STT_OPENAI_API_BASE_URL = form_data.stt.OPENAI_API_BASE_URL
-    app.state.config.STT_OPENAI_API_KEY = form_data.stt.OPENAI_API_KEY
     app.state.config.STT_ENGINE = form_data.stt.ENGINE
     app.state.config.STT_MODEL = form_data.stt.MODEL
 
     return {
         "tts": {
-            "OPENAI_API_BASE_URL": app.state.config.TTS_OPENAI_API_BASE_URL,
-            "OPENAI_API_KEY": app.state.config.TTS_OPENAI_API_KEY,
             "API_KEY": app.state.config.TTS_API_KEY,
             "ENGINE": app.state.config.TTS_ENGINE,
             "MODEL": app.state.config.TTS_MODEL,
@@ -181,8 +161,6 @@ async def update_audio_config(
             "SPLIT_ON": app.state.config.TTS_SPLIT_ON,
         },
         "stt": {
-            "OPENAI_API_BASE_URL": app.state.config.STT_OPENAI_API_BASE_URL,
-            "OPENAI_API_KEY": app.state.config.STT_OPENAI_API_KEY,
             "ENGINE": app.state.config.STT_ENGINE,
             "MODEL": app.state.config.STT_MODEL,
         },

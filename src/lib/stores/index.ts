@@ -1,6 +1,6 @@
 import { APP_NAME } from '$lib/constants';
 import { type Writable, writable } from 'svelte/store';
-import type { GlobalModelConfig, ModelConfig } from '$lib/apis';
+import type {  ModelConfig } from '$lib/apis';
 import type { Banner } from '$lib/types';
 import type { Socket } from 'socket.io-client';
 
@@ -26,8 +26,7 @@ export const pinnedChats = writable([]);
 export const tags = writable([]);
 
 export const models: Writable<Model[]> = writable([]);
-export const prompts: Writable<Prompt[]> = writable([]);
-export const documents: Writable<Document[]> = writable([]);
+
 
 export const tools = writable([]);
 export const functions = writable([]);
@@ -46,20 +45,16 @@ export const temporaryChatEnabled = writable(false);
 export const scrollPaginationEnabled = writable(false);
 export const currentChatPage = writable(1);
 
-export type Model = OpenAIModel | OllamaModel;
+export type Model =  OllamaModel;
 
 type BaseModel = {
 	id: string;
 	name: string;
 	info?: ModelConfig;
-	owned_by: 'ollama' | 'openai';
+	owned_by: 'ollama';
 };
 
-export interface OpenAIModel extends BaseModel {
-	owned_by: 'openai';
-	external: boolean;
-	source?: string;
-}
+
 
 export interface OllamaModel extends BaseModel {
 	owned_by: 'ollama';
@@ -141,20 +136,7 @@ type TitleSettings = {
 	prompt?: string;
 };
 
-type Prompt = {
-	command: string;
-	user_id: string;
-	title: string;
-	content: string;
-	timestamp: number;
-};
 
-type Document = {
-	collection_name: string;
-	filename: string;
-	name: string;
-	title: string;
-};
 
 type Config = {
 	status: boolean;

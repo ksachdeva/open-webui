@@ -32,11 +32,7 @@ from apps.ollama.main import (
     get_all_models as get_ollama_models,
     generate_openai_chat_completion as generate_ollama_chat_completion,
 )
-from apps.openai.main import (
-    app as openai_app,
-    get_all_models as get_openai_models,
-    generate_chat_completion as generate_openai_chat_completion,
-)
+
 
 from apps.audio.main import app as audio_app
 from apps.images.main import app as images_app
@@ -89,12 +85,10 @@ from config import (
     WEBUI_AUTH,
     ENV,
     VERSION,
-    CHANGELOG,
     FRONTEND_BUILD_DIR,
     CACHE_DIR,
     STATIC_DIR,
     DEFAULT_LOCALE,
-    ENABLE_OPENAI_API,
     ENABLE_OLLAMA_API,
     ENABLE_MODEL_FILTER,
     MODEL_FILTER_LIST,
@@ -174,7 +168,7 @@ app = FastAPI(
 
 app.state.config = AppConfig()
 
-app.state.config.ENABLE_OPENAI_API = ENABLE_OPENAI_API
+
 app.state.config.ENABLE_OLLAMA_API = ENABLE_OLLAMA_API
 
 app.state.config.ENABLE_MODEL_FILTER = ENABLE_MODEL_FILTER
@@ -785,7 +779,6 @@ async def check_url(request: Request, call_next):
 app.mount("/ws", socket_app)
 
 app.mount("/ollama", ollama_app)
-app.mount("/openai", openai_app)
 
 app.mount("/images/api/v1", images_app)
 app.mount("/audio/api/v1", audio_app)
@@ -796,15 +789,7 @@ app.mount("/api/v1", webui_app)
 
 async def get_all_models():
     # TODO: Optimize this function
-    pipe_models = []
-    openai_models = []
     ollama_models = []
-
-    pipe_models = await get_pipe_models()
-
-    if app.state.config.ENABLE_OPENAI_API:
-        openai_models = await get_openai_models()
-        openai_models = openai_models["data"]
 
     if app.state.config.ENABLE_OLLAMA_API:
         ollama_models = await get_ollama_models()
@@ -820,7 +805,7 @@ async def get_all_models():
             for model in ollama_models["models"]
         ]
 
-    models = pipe_models + openai_models + ollama_models
+    models = ollama_models
 
     global_action_ids = [
         function.id for function in Functions.get_global_action_functions()
@@ -1658,11 +1643,6 @@ async def get_app_version():
     return {
         "version": VERSION,
     }
-
-
-@app.get("/api/changelog")
-async def get_app_changelog():
-    return {key: CHANGELOG[key] for idx, key in enumerate(CHANGELOG) if idx < 5}
 
 
 @app.get("/api/version/updates")

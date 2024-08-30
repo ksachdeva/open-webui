@@ -1,17 +1,11 @@
-from sqlalchemy import create_engine, Column, Integer, DateTime, JSON, func
-from contextlib import contextmanager
+from sqlalchemy import Column, Integer, DateTime, JSON, func
 
 
 import os
-import sys
 import logging
-import importlib.metadata
-import pkgutil
 from urllib.parse import urlparse
 from datetime import datetime
 
-import chromadb
-from chromadb import Settings
 from typing import TypeVar, Generic
 from pydantic import BaseModel
 from typing import Optional
@@ -26,32 +20,27 @@ import shutil
 
 from apps.webui.internal.db import Base, get_db
 
-from constants import ERROR_MESSAGES
-
 from env import (
     ENV,
-    VERSION,
-    SAFE_MODE,
-    GLOBAL_LOG_LEVEL,
-    SRC_LOG_LEVELS,
-    BASE_DIR,
     DATA_DIR,
     BACKEND_DIR,
     FRONTEND_BUILD_DIR,
-    WEBUI_NAME,
-    WEBUI_URL,
-    WEBUI_FAVICON_URL,
-    WEBUI_BUILD_HASH,
     CONFIG_DATA,
-    DATABASE_URL,
-    CHANGELOG,
     WEBUI_AUTH,
-    WEBUI_AUTH_TRUSTED_EMAIL_HEADER,
-    WEBUI_AUTH_TRUSTED_NAME_HEADER,
-    WEBUI_SECRET_KEY,
-    WEBUI_SESSION_COOKIE_SAME_SITE,
-    WEBUI_SESSION_COOKIE_SECURE,
     log,
+    WEBUI_SESSION_COOKIE_SECURE,  # keep this import
+    WEBUI_SESSION_COOKIE_SAME_SITE,  # keep this import
+    WEBUI_SECRET_KEY,  # keep this import
+    SAFE_MODE,  # keep this import
+    WEBUI_BUILD_HASH,  # keep this import
+    GLOBAL_LOG_LEVEL,  # keep this import
+    WEBUI_URL,  # keep this import
+    WEBUI_AUTH_TRUSTED_NAME_HEADER,  # keep this import
+    WEBUI_AUTH_TRUSTED_EMAIL_HEADER,  # keep this import
+    WEBUI_NAME,  # keep this import
+    WEBUI_FAVICON_URL,  # keep this import
+    VERSION,  # keep this import
+    SRC_LOG_LEVELS,  # keep this import
 )
 
 
@@ -637,56 +626,6 @@ OLLAMA_BASE_URLS = PersistentConfig(
     "OLLAMA_BASE_URLS", "ollama.base_urls", OLLAMA_BASE_URLS
 )
 
-####################################
-# OPENAI_API
-####################################
-
-
-ENABLE_OPENAI_API = PersistentConfig(
-    "ENABLE_OPENAI_API",
-    "openai.enable",
-    os.environ.get("ENABLE_OPENAI_API", "True").lower() == "true",
-)
-
-
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
-OPENAI_API_BASE_URL = os.environ.get("OPENAI_API_BASE_URL", "")
-
-
-if OPENAI_API_BASE_URL == "":
-    OPENAI_API_BASE_URL = "https://api.openai.com/v1"
-
-OPENAI_API_KEYS = os.environ.get("OPENAI_API_KEYS", "")
-OPENAI_API_KEYS = OPENAI_API_KEYS if OPENAI_API_KEYS != "" else OPENAI_API_KEY
-
-OPENAI_API_KEYS = [url.strip() for url in OPENAI_API_KEYS.split(";")]
-OPENAI_API_KEYS = PersistentConfig(
-    "OPENAI_API_KEYS", "openai.api_keys", OPENAI_API_KEYS
-)
-
-OPENAI_API_BASE_URLS = os.environ.get("OPENAI_API_BASE_URLS", "")
-OPENAI_API_BASE_URLS = (
-    OPENAI_API_BASE_URLS if OPENAI_API_BASE_URLS != "" else OPENAI_API_BASE_URL
-)
-
-OPENAI_API_BASE_URLS = [
-    url.strip() if url != "" else "https://api.openai.com/v1"
-    for url in OPENAI_API_BASE_URLS.split(";")
-]
-OPENAI_API_BASE_URLS = PersistentConfig(
-    "OPENAI_API_BASE_URLS", "openai.api_base_urls", OPENAI_API_BASE_URLS
-)
-
-OPENAI_API_KEY = ""
-
-try:
-    OPENAI_API_KEY = OPENAI_API_KEYS.value[
-        OPENAI_API_BASE_URLS.value.index("https://api.openai.com/v1")
-    ]
-except Exception:
-    pass
-
-OPENAI_API_BASE_URL = "https://api.openai.com/v1"
 
 ####################################
 # WEBUI
@@ -954,152 +893,6 @@ TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE = PersistentConfig(
 )
 
 
-####################################
-# RAG document content extraction
-####################################
-
-CONTENT_EXTRACTION_ENGINE = PersistentConfig(
-    "CONTENT_EXTRACTION_ENGINE",
-    "rag.CONTENT_EXTRACTION_ENGINE",
-    os.environ.get("CONTENT_EXTRACTION_ENGINE", "").lower(),
-)
-
-TIKA_SERVER_URL = PersistentConfig(
-    "TIKA_SERVER_URL",
-    "rag.tika_server_url",
-    os.getenv("TIKA_SERVER_URL", "http://tika:9998"),  # Default for sidecar deployment
-)
-
-####################################
-# RAG
-####################################
-
-CHROMA_DATA_PATH = f"{DATA_DIR}/vector_db"
-CHROMA_TENANT = os.environ.get("CHROMA_TENANT", chromadb.DEFAULT_TENANT)
-CHROMA_DATABASE = os.environ.get("CHROMA_DATABASE", chromadb.DEFAULT_DATABASE)
-CHROMA_HTTP_HOST = os.environ.get("CHROMA_HTTP_HOST", "")
-CHROMA_HTTP_PORT = int(os.environ.get("CHROMA_HTTP_PORT", "8000"))
-# Comma-separated list of header=value pairs
-CHROMA_HTTP_HEADERS = os.environ.get("CHROMA_HTTP_HEADERS", "")
-if CHROMA_HTTP_HEADERS:
-    CHROMA_HTTP_HEADERS = dict(
-        [pair.split("=") for pair in CHROMA_HTTP_HEADERS.split(",")]
-    )
-else:
-    CHROMA_HTTP_HEADERS = None
-CHROMA_HTTP_SSL = os.environ.get("CHROMA_HTTP_SSL", "false").lower() == "true"
-# this uses the model defined in the Dockerfile ENV variable. If you dont use docker or docker based deployments such as k8s, the default embedding model will be used (sentence-transformers/all-MiniLM-L6-v2)
-
-RAG_TOP_K = PersistentConfig(
-    "RAG_TOP_K", "rag.top_k", int(os.environ.get("RAG_TOP_K", "5"))
-)
-RAG_RELEVANCE_THRESHOLD = PersistentConfig(
-    "RAG_RELEVANCE_THRESHOLD",
-    "rag.relevance_threshold",
-    float(os.environ.get("RAG_RELEVANCE_THRESHOLD", "0.0")),
-)
-
-ENABLE_RAG_HYBRID_SEARCH = PersistentConfig(
-    "ENABLE_RAG_HYBRID_SEARCH",
-    "rag.enable_hybrid_search",
-    os.environ.get("ENABLE_RAG_HYBRID_SEARCH", "").lower() == "true",
-)
-
-RAG_FILE_MAX_COUNT = PersistentConfig(
-    "RAG_FILE_MAX_COUNT",
-    "rag.file.max_count",
-    (
-        int(os.environ.get("RAG_FILE_MAX_COUNT"))
-        if os.environ.get("RAG_FILE_MAX_COUNT")
-        else None
-    ),
-)
-
-RAG_FILE_MAX_SIZE = PersistentConfig(
-    "RAG_FILE_MAX_SIZE",
-    "rag.file.max_size",
-    (
-        int(os.environ.get("RAG_FILE_MAX_SIZE"))
-        if os.environ.get("RAG_FILE_MAX_SIZE")
-        else None
-    ),
-)
-
-ENABLE_RAG_WEB_LOADER_SSL_VERIFICATION = PersistentConfig(
-    "ENABLE_RAG_WEB_LOADER_SSL_VERIFICATION",
-    "rag.enable_web_loader_ssl_verification",
-    os.environ.get("ENABLE_RAG_WEB_LOADER_SSL_VERIFICATION", "True").lower() == "true",
-)
-
-RAG_EMBEDDING_ENGINE = PersistentConfig(
-    "RAG_EMBEDDING_ENGINE",
-    "rag.embedding_engine",
-    os.environ.get("RAG_EMBEDDING_ENGINE", ""),
-)
-
-PDF_EXTRACT_IMAGES = PersistentConfig(
-    "PDF_EXTRACT_IMAGES",
-    "rag.pdf_extract_images",
-    os.environ.get("PDF_EXTRACT_IMAGES", "False").lower() == "true",
-)
-
-RAG_EMBEDDING_MODEL = PersistentConfig(
-    "RAG_EMBEDDING_MODEL",
-    "rag.embedding_model",
-    os.environ.get("RAG_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2"),
-)
-log.info(f"Embedding model set: {RAG_EMBEDDING_MODEL.value}")
-
-RAG_EMBEDDING_MODEL_AUTO_UPDATE = (
-    os.environ.get("RAG_EMBEDDING_MODEL_AUTO_UPDATE", "").lower() == "true"
-)
-
-RAG_EMBEDDING_MODEL_TRUST_REMOTE_CODE = (
-    os.environ.get("RAG_EMBEDDING_MODEL_TRUST_REMOTE_CODE", "").lower() == "true"
-)
-
-RAG_EMBEDDING_OPENAI_BATCH_SIZE = PersistentConfig(
-    "RAG_EMBEDDING_OPENAI_BATCH_SIZE",
-    "rag.embedding_openai_batch_size",
-    int(os.environ.get("RAG_EMBEDDING_OPENAI_BATCH_SIZE", "1")),
-)
-
-RAG_RERANKING_MODEL = PersistentConfig(
-    "RAG_RERANKING_MODEL",
-    "rag.reranking_model",
-    os.environ.get("RAG_RERANKING_MODEL", ""),
-)
-if RAG_RERANKING_MODEL.value != "":
-    log.info(f"Reranking model set: {RAG_RERANKING_MODEL.value}")
-
-RAG_RERANKING_MODEL_AUTO_UPDATE = (
-    os.environ.get("RAG_RERANKING_MODEL_AUTO_UPDATE", "").lower() == "true"
-)
-
-RAG_RERANKING_MODEL_TRUST_REMOTE_CODE = (
-    os.environ.get("RAG_RERANKING_MODEL_TRUST_REMOTE_CODE", "").lower() == "true"
-)
-
-
-if CHROMA_HTTP_HOST != "":
-    CHROMA_CLIENT = chromadb.HttpClient(
-        host=CHROMA_HTTP_HOST,
-        port=CHROMA_HTTP_PORT,
-        headers=CHROMA_HTTP_HEADERS,
-        ssl=CHROMA_HTTP_SSL,
-        tenant=CHROMA_TENANT,
-        database=CHROMA_DATABASE,
-        settings=Settings(allow_reset=True, anonymized_telemetry=False),
-    )
-else:
-    CHROMA_CLIENT = chromadb.PersistentClient(
-        path=CHROMA_DATA_PATH,
-        settings=Settings(allow_reset=True, anonymized_telemetry=False),
-        tenant=CHROMA_TENANT,
-        database=CHROMA_DATABASE,
-    )
-
-
 # device type embedding models - "cpu" (default), "cuda" (nvidia gpu required) or "mps" (apple silicon) - choosing this right can lead to better performance
 USE_CUDA = os.environ.get("USE_CUDA_DOCKER", "false")
 
@@ -1107,147 +900,6 @@ if USE_CUDA.lower() == "true":
     DEVICE_TYPE = "cuda"
 else:
     DEVICE_TYPE = "cpu"
-
-CHUNK_SIZE = PersistentConfig(
-    "CHUNK_SIZE", "rag.chunk_size", int(os.environ.get("CHUNK_SIZE", "1500"))
-)
-CHUNK_OVERLAP = PersistentConfig(
-    "CHUNK_OVERLAP",
-    "rag.chunk_overlap",
-    int(os.environ.get("CHUNK_OVERLAP", "100")),
-)
-
-DEFAULT_RAG_TEMPLATE = """Use the following context as your learned knowledge, inside <context></context> XML tags.
-<context>
-    [context]
-</context>
-
-When answer to user:
-- If you don't know, just say that you don't know.
-- If you don't know when you are not sure, ask for clarification.
-Avoid mentioning that you obtained the information from the context.
-And answer according to the language of the user's question.
-
-Given the context information, answer the query.
-Query: [query]"""
-
-RAG_TEMPLATE = PersistentConfig(
-    "RAG_TEMPLATE",
-    "rag.template",
-    os.environ.get("RAG_TEMPLATE", DEFAULT_RAG_TEMPLATE),
-)
-
-RAG_OPENAI_API_BASE_URL = PersistentConfig(
-    "RAG_OPENAI_API_BASE_URL",
-    "rag.openai_api_base_url",
-    os.getenv("RAG_OPENAI_API_BASE_URL", OPENAI_API_BASE_URL),
-)
-RAG_OPENAI_API_KEY = PersistentConfig(
-    "RAG_OPENAI_API_KEY",
-    "rag.openai_api_key",
-    os.getenv("RAG_OPENAI_API_KEY", OPENAI_API_KEY),
-)
-
-ENABLE_RAG_LOCAL_WEB_FETCH = (
-    os.getenv("ENABLE_RAG_LOCAL_WEB_FETCH", "False").lower() == "true"
-)
-
-YOUTUBE_LOADER_LANGUAGE = PersistentConfig(
-    "YOUTUBE_LOADER_LANGUAGE",
-    "rag.youtube_loader_language",
-    os.getenv("YOUTUBE_LOADER_LANGUAGE", "en").split(","),
-)
-
-
-ENABLE_RAG_WEB_SEARCH = PersistentConfig(
-    "ENABLE_RAG_WEB_SEARCH",
-    "rag.web.search.enable",
-    os.getenv("ENABLE_RAG_WEB_SEARCH", "False").lower() == "true",
-)
-
-RAG_WEB_SEARCH_ENGINE = PersistentConfig(
-    "RAG_WEB_SEARCH_ENGINE",
-    "rag.web.search.engine",
-    os.getenv("RAG_WEB_SEARCH_ENGINE", ""),
-)
-
-# You can provide a list of your own websites to filter after performing a web search.
-# This ensures the highest level of safety and reliability of the information sources.
-RAG_WEB_SEARCH_DOMAIN_FILTER_LIST = PersistentConfig(
-    "RAG_WEB_SEARCH_DOMAIN_FILTER_LIST",
-    "rag.rag.web.search.domain.filter_list",
-    [
-        # "wikipedia.com",
-        # "wikimedia.org",
-        # "wikidata.org",
-    ],
-)
-
-SEARXNG_QUERY_URL = PersistentConfig(
-    "SEARXNG_QUERY_URL",
-    "rag.web.search.searxng_query_url",
-    os.getenv("SEARXNG_QUERY_URL", ""),
-)
-
-GOOGLE_PSE_API_KEY = PersistentConfig(
-    "GOOGLE_PSE_API_KEY",
-    "rag.web.search.google_pse_api_key",
-    os.getenv("GOOGLE_PSE_API_KEY", ""),
-)
-
-GOOGLE_PSE_ENGINE_ID = PersistentConfig(
-    "GOOGLE_PSE_ENGINE_ID",
-    "rag.web.search.google_pse_engine_id",
-    os.getenv("GOOGLE_PSE_ENGINE_ID", ""),
-)
-
-BRAVE_SEARCH_API_KEY = PersistentConfig(
-    "BRAVE_SEARCH_API_KEY",
-    "rag.web.search.brave_search_api_key",
-    os.getenv("BRAVE_SEARCH_API_KEY", ""),
-)
-
-SERPSTACK_API_KEY = PersistentConfig(
-    "SERPSTACK_API_KEY",
-    "rag.web.search.serpstack_api_key",
-    os.getenv("SERPSTACK_API_KEY", ""),
-)
-
-SERPSTACK_HTTPS = PersistentConfig(
-    "SERPSTACK_HTTPS",
-    "rag.web.search.serpstack_https",
-    os.getenv("SERPSTACK_HTTPS", "True").lower() == "true",
-)
-
-SERPER_API_KEY = PersistentConfig(
-    "SERPER_API_KEY",
-    "rag.web.search.serper_api_key",
-    os.getenv("SERPER_API_KEY", ""),
-)
-
-SERPLY_API_KEY = PersistentConfig(
-    "SERPLY_API_KEY",
-    "rag.web.search.serply_api_key",
-    os.getenv("SERPLY_API_KEY", ""),
-)
-
-TAVILY_API_KEY = PersistentConfig(
-    "TAVILY_API_KEY",
-    "rag.web.search.tavily_api_key",
-    os.getenv("TAVILY_API_KEY", ""),
-)
-
-RAG_WEB_SEARCH_RESULT_COUNT = PersistentConfig(
-    "RAG_WEB_SEARCH_RESULT_COUNT",
-    "rag.web.search.result_count",
-    int(os.getenv("RAG_WEB_SEARCH_RESULT_COUNT", "3")),
-)
-
-RAG_WEB_SEARCH_CONCURRENT_REQUESTS = PersistentConfig(
-    "RAG_WEB_SEARCH_CONCURRENT_REQUESTS",
-    "rag.web.search.concurrent_requests",
-    int(os.getenv("RAG_WEB_SEARCH_CONCURRENT_REQUESTS", "10")),
-)
 
 
 ####################################
@@ -1416,17 +1068,6 @@ COMFYUI_WORKFLOW_NODES = PersistentConfig(
     [],
 )
 
-IMAGES_OPENAI_API_BASE_URL = PersistentConfig(
-    "IMAGES_OPENAI_API_BASE_URL",
-    "image_generation.openai.api_base_url",
-    os.getenv("IMAGES_OPENAI_API_BASE_URL", OPENAI_API_BASE_URL),
-)
-IMAGES_OPENAI_API_KEY = PersistentConfig(
-    "IMAGES_OPENAI_API_KEY",
-    "image_generation.openai.api_key",
-    os.getenv("IMAGES_OPENAI_API_KEY", OPENAI_API_KEY),
-)
-
 IMAGE_SIZE = PersistentConfig(
     "IMAGE_SIZE", "image_generation.size", os.getenv("IMAGE_SIZE", "512x512")
 )
@@ -1441,21 +1082,11 @@ IMAGE_GENERATION_MODEL = PersistentConfig(
     os.getenv("IMAGE_GENERATION_MODEL", ""),
 )
 
+
 ####################################
 # Audio
 ####################################
 
-AUDIO_STT_OPENAI_API_BASE_URL = PersistentConfig(
-    "AUDIO_STT_OPENAI_API_BASE_URL",
-    "audio.stt.openai.api_base_url",
-    os.getenv("AUDIO_STT_OPENAI_API_BASE_URL", OPENAI_API_BASE_URL),
-)
-
-AUDIO_STT_OPENAI_API_KEY = PersistentConfig(
-    "AUDIO_STT_OPENAI_API_KEY",
-    "audio.stt.openai.api_key",
-    os.getenv("AUDIO_STT_OPENAI_API_KEY", OPENAI_API_KEY),
-)
 
 AUDIO_STT_ENGINE = PersistentConfig(
     "AUDIO_STT_ENGINE",
@@ -1467,17 +1098,6 @@ AUDIO_STT_MODEL = PersistentConfig(
     "AUDIO_STT_MODEL",
     "audio.stt.model",
     os.getenv("AUDIO_STT_MODEL", "whisper-1"),
-)
-
-AUDIO_TTS_OPENAI_API_BASE_URL = PersistentConfig(
-    "AUDIO_TTS_OPENAI_API_BASE_URL",
-    "audio.tts.openai.api_base_url",
-    os.getenv("AUDIO_TTS_OPENAI_API_BASE_URL", OPENAI_API_BASE_URL),
-)
-AUDIO_TTS_OPENAI_API_KEY = PersistentConfig(
-    "AUDIO_TTS_OPENAI_API_KEY",
-    "audio.tts.openai.api_key",
-    os.getenv("AUDIO_TTS_OPENAI_API_KEY", OPENAI_API_KEY),
 )
 
 AUDIO_TTS_API_KEY = PersistentConfig(

@@ -39,8 +39,6 @@ from config import (
     COMFYUI_BASE_URL,
     COMFYUI_WORKFLOW,
     COMFYUI_WORKFLOW_NODES,
-    IMAGES_OPENAI_API_BASE_URL,
-    IMAGES_OPENAI_API_KEY,
     IMAGE_GENERATION_MODEL,
     IMAGE_SIZE,
     IMAGE_STEPS,
@@ -68,9 +66,6 @@ app.state.config = AppConfig()
 app.state.config.ENGINE = IMAGE_GENERATION_ENGINE
 app.state.config.ENABLED = ENABLE_IMAGE_GENERATION
 
-app.state.config.OPENAI_API_BASE_URL = IMAGES_OPENAI_API_BASE_URL
-app.state.config.OPENAI_API_KEY = IMAGES_OPENAI_API_KEY
-
 app.state.config.MODEL = IMAGE_GENERATION_MODEL
 
 app.state.config.AUTOMATIC1111_BASE_URL = AUTOMATIC1111_BASE_URL
@@ -88,10 +83,6 @@ async def get_config(request: Request, user=Depends(get_admin_user)):
     return {
         "enabled": app.state.config.ENABLED,
         "engine": app.state.config.ENGINE,
-        "openai": {
-            "OPENAI_API_BASE_URL": app.state.config.OPENAI_API_BASE_URL,
-            "OPENAI_API_KEY": app.state.config.OPENAI_API_KEY,
-        },
         "automatic1111": {
             "AUTOMATIC1111_BASE_URL": app.state.config.AUTOMATIC1111_BASE_URL,
             "AUTOMATIC1111_API_AUTH": app.state.config.AUTOMATIC1111_API_AUTH,
@@ -102,11 +93,6 @@ async def get_config(request: Request, user=Depends(get_admin_user)):
             "COMFYUI_WORKFLOW_NODES": app.state.config.COMFYUI_WORKFLOW_NODES,
         },
     }
-
-
-class OpenAIConfigForm(BaseModel):
-    OPENAI_API_BASE_URL: str
-    OPENAI_API_KEY: str
 
 
 class Automatic1111ConfigForm(BaseModel):
@@ -123,7 +109,6 @@ class ComfyUIConfigForm(BaseModel):
 class ConfigForm(BaseModel):
     enabled: bool
     engine: str
-    openai: OpenAIConfigForm
     automatic1111: Automatic1111ConfigForm
     comfyui: ComfyUIConfigForm
 
@@ -132,9 +117,6 @@ class ConfigForm(BaseModel):
 async def update_config(form_data: ConfigForm, user=Depends(get_admin_user)):
     app.state.config.ENGINE = form_data.engine
     app.state.config.ENABLED = form_data.enabled
-
-    app.state.config.OPENAI_API_BASE_URL = form_data.openai.OPENAI_API_BASE_URL
-    app.state.config.OPENAI_API_KEY = form_data.openai.OPENAI_API_KEY
 
     app.state.config.AUTOMATIC1111_BASE_URL = (
         form_data.automatic1111.AUTOMATIC1111_BASE_URL
@@ -150,10 +132,6 @@ async def update_config(form_data: ConfigForm, user=Depends(get_admin_user)):
     return {
         "enabled": app.state.config.ENABLED,
         "engine": app.state.config.ENGINE,
-        "openai": {
-            "OPENAI_API_BASE_URL": app.state.config.OPENAI_API_BASE_URL,
-            "OPENAI_API_KEY": app.state.config.OPENAI_API_KEY,
-        },
         "automatic1111": {
             "AUTOMATIC1111_BASE_URL": app.state.config.AUTOMATIC1111_BASE_URL,
             "AUTOMATIC1111_API_AUTH": app.state.config.AUTOMATIC1111_API_AUTH,
