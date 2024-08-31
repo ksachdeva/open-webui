@@ -1,8 +1,4 @@
-import base64
-import uuid
 from contextlib import asynccontextmanager
-from authlib.integrations.starlette_client import OAuth
-from authlib.oidc.core import UserInfo
 import json
 import time
 import os
@@ -22,8 +18,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.middleware.sessions import SessionMiddleware
-from starlette.responses import StreamingResponse, Response, RedirectResponse
+from starlette.responses import StreamingResponse, Response
 
 
 from apps.socket.main import app as socket_app, get_event_emitter, get_event_call
@@ -38,7 +33,6 @@ from apps.audio.main import app as audio_app
 from apps.images.main import app as images_app
 from apps.webui.main import (
     app as webui_app,
-    get_pipe_models,
     generate_function_chat_completion,
 )
 from apps.webui.internal.db import Session
@@ -46,7 +40,6 @@ from apps.webui.internal.db import Session
 
 from pydantic import BaseModel
 
-from apps.webui.models.auths import Auths
 from apps.webui.models.models import Models
 from apps.webui.models.functions import Functions
 from apps.webui.models.users import Users, UserModel
@@ -58,8 +51,6 @@ from utils.utils import (
     get_verified_user,
     get_current_user,
     get_http_authorization_cred,
-    get_password_hash,
-    create_token,
     decode_token,
 )
 from utils.task import (
@@ -74,7 +65,6 @@ from utils.misc import (
     get_last_user_message,
     add_or_update_system_message,
     prepend_to_first_user_message_content,
-    parse_duration,
 )
 
 
@@ -104,9 +94,6 @@ from config import (
     SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD,
     TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE,
     SAFE_MODE,
-    OAUTH_PROVIDERS,
-    ENABLE_OAUTH_SIGNUP,
-    OAUTH_MERGE_ACCOUNTS_BY_EMAIL,
     WEBUI_SECRET_KEY,
     WEBUI_SESSION_COOKIE_SAME_SITE,
     WEBUI_SESSION_COOKIE_SECURE,
@@ -1546,12 +1533,6 @@ async def get_app_config(request: Request):
         "name": WEBUI_NAME,
         "version": VERSION,
         "default_locale": str(DEFAULT_LOCALE),
-        "oauth": {
-            "providers": {
-                name: config.get("name", name)
-                for name, config in OAUTH_PROVIDERS.items()
-            }
-        },
         "features": {
             "auth": WEBUI_AUTH,
             "auth_trusted_header": bool(webui_app.state.AUTH_TRUSTED_EMAIL_HEADER),
@@ -1662,169 +1643,6 @@ async def get_app_latest_release_version():
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=ERROR_MESSAGES.RATE_LIMIT_EXCEEDED,
         )
-
-
-############################
-# OAuth Login & Callback
-############################
-
-oauth = OAuth()
-
-for provider_name, provider_config in OAUTH_PROVIDERS.items():
-    oauth.register(
-        name=provider_name,
-        client_id=provider_config["client_id"],
-        client_secret=provider_config["client_secret"],
-        server_metadata_url=provider_config["server_metadata_url"],
-        client_kwargs={
-            "scope": provider_config["scope"],
-        },
-        redirect_uri=provider_config["redirect_uri"],
-    )
-
-# SessionMiddleware is used by authlib for oauth
-if len(OAUTH_PROVIDERS) > 0:
-    app.add_middleware(
-        SessionMiddleware,
-        secret_key=WEBUI_SECRET_KEY,
-        session_cookie="oui-session",
-        same_site=WEBUI_SESSION_COOKIE_SAME_SITE,
-        https_only=WEBUI_SESSION_COOKIE_SECURE,
-    )
-
-
-@app.get("/oauth/{provider}/login")
-async def oauth_login(provider: str, request: Request):
-    if provider not in OAUTH_PROVIDERS:
-        raise HTTPException(404)
-    # If the provider has a custom redirect URL, use that, otherwise automatically generate one
-    redirect_uri = OAUTH_PROVIDERS[provider].get("redirect_uri") or request.url_for(
-        "oauth_callback", provider=provider
-    )
-    client = oauth.create_client(provider)
-    if client is None:
-        raise HTTPException(404)
-    return await client.authorize_redirect(request, redirect_uri)
-
-
-# OAuth login logic is as follows:
-# 1. Attempt to find a user with matching subject ID, tied to the provider
-# 2. If OAUTH_MERGE_ACCOUNTS_BY_EMAIL is true, find a user with the email address provided via OAuth
-#    - This is considered insecure in general, as OAuth providers do not always verify email addresses
-# 3. If there is no user, and ENABLE_OAUTH_SIGNUP is true, create a user
-#    - Email addresses are considered unique, so we fail registration if the email address is alreayd taken
-@app.get("/oauth/{provider}/callback")
-async def oauth_callback(provider: str, request: Request, response: Response):
-    if provider not in OAUTH_PROVIDERS:
-        raise HTTPException(404)
-    client = oauth.create_client(provider)
-    try:
-        token = await client.authorize_access_token(request)
-    except Exception as e:
-        log.warning(f"OAuth callback error: {e}")
-        raise HTTPException(400, detail=ERROR_MESSAGES.INVALID_CRED)
-    user_data: UserInfo = token["userinfo"]
-
-    sub = user_data.get("sub")
-    if not sub:
-        log.warning(f"OAuth callback failed, sub is missing: {user_data}")
-        raise HTTPException(400, detail=ERROR_MESSAGES.INVALID_CRED)
-    provider_sub = f"{provider}@{sub}"
-    email_claim = webui_app.state.config.OAUTH_EMAIL_CLAIM
-    email = user_data.get(email_claim, "").lower()
-    # We currently mandate that email addresses are provided
-    if not email:
-        log.warning(f"OAuth callback failed, email is missing: {user_data}")
-        raise HTTPException(400, detail=ERROR_MESSAGES.INVALID_CRED)
-
-    # Check if the user exists
-    user = Users.get_user_by_oauth_sub(provider_sub)
-
-    if not user:
-        # If the user does not exist, check if merging is enabled
-        if OAUTH_MERGE_ACCOUNTS_BY_EMAIL.value:
-            # Check if the user exists by email
-            user = Users.get_user_by_email(email)
-            if user:
-                # Update the user with the new oauth sub
-                Users.update_user_oauth_sub_by_id(user.id, provider_sub)
-
-    if not user:
-        # If the user does not exist, check if signups are enabled
-        if ENABLE_OAUTH_SIGNUP.value:
-            # Check if an existing user with the same email already exists
-            existing_user = Users.get_user_by_email(user_data.get("email", "").lower())
-            if existing_user:
-                raise HTTPException(400, detail=ERROR_MESSAGES.EMAIL_TAKEN)
-
-            picture_claim = webui_app.state.config.OAUTH_PICTURE_CLAIM
-            picture_url = user_data.get(picture_claim, "")
-            if picture_url:
-                # Download the profile image into a base64 string
-                try:
-                    async with aiohttp.ClientSession() as session:
-                        async with session.get(picture_url) as resp:
-                            picture = await resp.read()
-                            base64_encoded_picture = base64.b64encode(picture).decode(
-                                "utf-8"
-                            )
-                            guessed_mime_type = mimetypes.guess_type(picture_url)[0]
-                            if guessed_mime_type is None:
-                                # assume JPG, browsers are tolerant enough of image formats
-                                guessed_mime_type = "image/jpeg"
-                            picture_url = f"data:{guessed_mime_type};base64,{base64_encoded_picture}"
-                except Exception as e:
-                    log.error(f"Error downloading profile image '{picture_url}': {e}")
-                    picture_url = ""
-            if not picture_url:
-                picture_url = "/user.png"
-            username_claim = webui_app.state.config.OAUTH_USERNAME_CLAIM
-            role = (
-                "admin"
-                if Users.get_num_users() == 0
-                else webui_app.state.config.DEFAULT_USER_ROLE
-            )
-            user = Auths.insert_new_auth(
-                email=email,
-                password=get_password_hash(
-                    str(uuid.uuid4())
-                ),  # Random password, not used
-                name=user_data.get(username_claim, "User"),
-                profile_image_url=picture_url,
-                role=role,
-                oauth_sub=provider_sub,
-            )
-
-            if webui_app.state.config.WEBHOOK_URL:
-                post_webhook(
-                    webui_app.state.config.WEBHOOK_URL,
-                    WEBHOOK_MESSAGES.USER_SIGNUP(user.name),
-                    {
-                        "action": "signup",
-                        "message": WEBHOOK_MESSAGES.USER_SIGNUP(user.name),
-                        "user": user.model_dump_json(exclude_none=True),
-                    },
-                )
-        else:
-            raise HTTPException(
-                status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.ACCESS_PROHIBITED
-            )
-
-    jwt_token = create_token(
-        data={"id": user.id},
-        expires_delta=parse_duration(webui_app.state.config.JWT_EXPIRES_IN),
-    )
-
-    # Set the cookie token
-    response.set_cookie(
-        key="token",
-        value=jwt_token,
-        httponly=True,  # Ensures the cookie is not accessible via JavaScript
-    )
-
-    # Redirect back to the frontend with the JWT token
-    redirect_url = f"{request.base_url}auth#token={jwt_token}"
-    return RedirectResponse(url=redirect_url)
 
 
 @app.get("/manifest.json")
