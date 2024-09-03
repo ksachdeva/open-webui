@@ -31,8 +31,7 @@ from utils.utils import (
     create_api_key,
 )
 from utils.misc import parse_duration, validate_email_format
-from utils.webhook import post_webhook
-from constants import ERROR_MESSAGES, WEBHOOK_MESSAGES
+from constants import ERROR_MESSAGES
 from config import (
     WEBUI_AUTH,
     WEBUI_AUTH_TRUSTED_EMAIL_HEADER,
@@ -239,17 +238,6 @@ async def signup(request: Request, response: Response, form_data: SignupForm):
                 value=token,
                 httponly=True,  # Ensures the cookie is not accessible via JavaScript
             )
-
-            if request.app.state.config.WEBHOOK_URL:
-                post_webhook(
-                    request.app.state.config.WEBHOOK_URL,
-                    WEBHOOK_MESSAGES.USER_SIGNUP(user.name),
-                    {
-                        "action": "signup",
-                        "message": WEBHOOK_MESSAGES.USER_SIGNUP(user.name),
-                        "user": user.model_dump_json(exclude_none=True),
-                    },
-                )
 
             return {
                 "token": token,

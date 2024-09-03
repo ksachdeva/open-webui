@@ -28,7 +28,6 @@ from apps.ollama.main import (
 
 
 from apps.audio.main import app as audio_app
-from apps.images.main import app as images_app
 from apps.webui.main import app as webui_app
 from apps.webui.internal.db import Session
 
@@ -69,7 +68,6 @@ from config import (
     MODEL_FILTER_LIST,
     GLOBAL_LOG_LEVEL,
     SRC_LOG_LEVELS,
-    WEBHOOK_URL,
     ENABLE_ADMIN_EXPORT,
     WEBUI_BUILD_HASH,
     TASK_MODEL,
@@ -87,8 +85,7 @@ from config import (
     CORS_ALLOW_ORIGIN,
 )
 
-from constants import ERROR_MESSAGES, WEBHOOK_MESSAGES, TASKS
-from utils.webhook import post_webhook
+from constants import ERROR_MESSAGES, TASKS
 
 if SAFE_MODE:
     print("SAFE MODE ENABLED")
@@ -146,8 +143,6 @@ app.state.config.ENABLE_OLLAMA_API = ENABLE_OLLAMA_API
 
 app.state.config.ENABLE_MODEL_FILTER = ENABLE_MODEL_FILTER
 app.state.config.MODEL_FILTER_LIST = MODEL_FILTER_LIST
-
-app.state.config.WEBHOOK_URL = WEBHOOK_URL
 
 
 app.state.config.TASK_MODEL = TASK_MODEL
@@ -356,13 +351,8 @@ async def check_url(request: Request, call_next):
 
 
 app.mount("/ws", socket_app)
-
 app.mount("/ollama", ollama_app)
-
-app.mount("/images/api/v1", images_app)
 app.mount("/audio/api/v1", audio_app)
-
-
 app.mount("/api/v1", webui_app)
 
 
@@ -781,7 +771,7 @@ async def get_app_config(request: Request):
             "enable_login_form": webui_app.state.config.ENABLE_LOGIN_FORM,
             **(
                 {
-                    "enable_image_generation": images_app.state.config.ENABLED,
+                    "enable_image_generation": False,
                     "enable_community_sharing": webui_app.state.config.ENABLE_COMMUNITY_SHARING,
                     "enable_message_rating": webui_app.state.config.ENABLE_MESSAGE_RATING,
                     "enable_admin_export": ENABLE_ADMIN_EXPORT,
@@ -839,25 +829,8 @@ async def update_model_filter_config(
     }
 
 
-# TODO: webhook endpoint should be under config endpoints
-
-
-@app.get("/api/webhook")
-async def get_webhook_url(user=Depends(get_admin_user)):
-    return {
-        "url": app.state.config.WEBHOOK_URL,
-    }
-
-
 class UrlForm(BaseModel):
     url: str
-
-
-@app.post("/api/webhook")
-async def update_webhook_url(form_data: UrlForm, user=Depends(get_admin_user)):
-    app.state.config.WEBHOOK_URL = form_data.url
-    webui_app.state.WEBHOOK_URL = app.state.config.WEBHOOK_URL
-    return {"url": app.state.config.WEBHOOK_URL}
 
 
 @app.get("/api/version")

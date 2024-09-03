@@ -501,9 +501,6 @@ MODEL_FILTER_LIST = PersistentConfig(
     [model.strip() for model in MODEL_FILTER_LIST.split(";")],
 )
 
-WEBHOOK_URL = PersistentConfig(
-    "WEBHOOK_URL", "webhook_url", os.environ.get("WEBHOOK_URL", "")
-)
 
 ENABLE_ADMIN_EXPORT = os.environ.get("ENABLE_ADMIN_EXPORT", "True").lower() == "true"
 

@@ -1,8 +1,6 @@
-<script lang="ts">
-	import { getBackendConfig, getWebhookUrl, updateWebhookUrl } from '$lib/apis';
+<script lang="ts">	
 	import { getAdminConfig, updateAdminConfig } from '$lib/apis/auths';
-	import Switch from '$lib/components/common/Switch.svelte';
-	import { config } from '$lib/stores';
+	import Switch from '$lib/components/common/Switch.svelte';	
 	import { onMount, getContext } from 'svelte';
 	import { toast } from 'svelte-sonner';
 
@@ -11,10 +9,10 @@
 	export let saveHandler: Function;
 
 	let adminConfig = null;
-	let webhookUrl = '';
+	
 
 	const updateHandler = async () => {
-		webhookUrl = await updateWebhookUrl(localStorage.token, webhookUrl);
+		
 		const res = await updateAdminConfig(localStorage.token, adminConfig);
 
 		if (res) {
@@ -30,9 +28,7 @@
 				adminConfig = await getAdminConfig(localStorage.token);
 			})(),
 
-			(async () => {
-				webhookUrl = await getWebhookUrl(localStorage.token);
-			})()
+			
 		]);
 	});
 </script>
@@ -115,22 +111,9 @@
 					</div>
 				</div>
 
-				<hr class=" dark:border-gray-850 my-2" />
+				
 
-				<div class=" w-full justify-between">
-					<div class="flex w-full justify-between">
-						<div class=" self-center text-xs font-medium">{$i18n.t('Webhook URL')}</div>
-					</div>
-
-					<div class="flex mt-2 space-x-2">
-						<input
-							class="w-full rounded-lg py-2 px-4 text-sm bg-gray-50 dark:text-gray-300 dark:bg-gray-850 outline-none"
-							type="text"
-							placeholder={`https://example.com/webhook`}
-							bind:value={webhookUrl}
-						/>
-					</div>
-				</div>
+				
 			</div>
 		{/if}
 	</div>

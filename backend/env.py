@@ -44,16 +44,12 @@ log.info(f"GLOBAL_LOG_LEVEL: {GLOBAL_LOG_LEVEL}")
 
 log_sources = [
     "AUDIO",
-    "COMFYUI",
     "CONFIG",
     "DB",
     "IMAGES",
     "MAIN",
     "MODELS",
     "OLLAMA",
-    "OPENAI",
-    "RAG",
-    "WEBHOOK",
 ]
 
 SRC_LOG_LEVELS = {}
