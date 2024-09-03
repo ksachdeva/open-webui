@@ -1,12 +1,10 @@
 <script lang="ts">
 	import { toast } from 'svelte-sonner';
 	import dayjs from 'dayjs';
-	import { getContext, createEventDispatcher } from 'svelte';
-
-	const dispatch = createEventDispatcher();
+	import { getContext } from 'svelte';	
 
 	import Modal from '$lib/components/common/Modal.svelte';
-	import { getChatListByUserId, deleteChatById, getArchivedChatList } from '$lib/apis/chats';
+	import { getChatListByUserId, deleteChatById } from '$lib/apis/chats';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 
 	const i18n = getContext('i18n');

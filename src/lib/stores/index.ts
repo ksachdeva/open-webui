@@ -37,7 +37,6 @@ export const settings: Writable<Settings> = writable({});
 
 export const showSidebar = writable(false);
 export const showSettings = writable(false);
-export const showCallOverlay = writable(false);
 
 export const temporaryChatEnabled = writable(false);
 export const scrollPaginationEnabled = writable(false);
@@ -93,8 +92,7 @@ type Settings = {
 	models?: string[];
 	conversationMode?: boolean;
 	speechAutoSend?: boolean;
-	responseAutoPlayback?: boolean;
-	audio?: AudioSettings;
+	responseAutoPlayback?: boolean;	
 	showUsername?: boolean;
 	notificationEnabled?: boolean;
 	title?: TitleSettings;
@@ -119,22 +117,12 @@ type ModelOptions = {
 	stop?: boolean;
 };
 
-type AudioSettings = {
-	STTEngine?: string;
-	TTSEngine?: string;
-	speaker?: string;
-	model?: string;
-	nonLocalVoices?: boolean;
-};
-
 type TitleSettings = {
 	auto?: boolean;
 	model?: string;
 	modelExternal?: string;
 	prompt?: string;
 };
-
-
 
 type Config = {
 	status: boolean;

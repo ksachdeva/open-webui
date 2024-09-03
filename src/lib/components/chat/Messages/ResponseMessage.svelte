@@ -10,10 +10,9 @@
 	const dispatch = createEventDispatcher();
 
 	import { config, models, settings, user } from '$lib/stores';
-	import { synthesizeOpenAISpeech } from '$lib/apis/audio';	
+	
 	import {
-		approximateToHumanReadable,		
-		getMessageContentParts
+		approximateToHumanReadable
 	} from '$lib/utils';
 	import { WEBUI_BASE_URL } from '$lib/constants';
 
@@ -102,29 +101,7 @@
 	let loadingSpeech = false;
 
 	let showRateComment = false;
-
-	const playAudio = (idx: number) => {
-		return new Promise<void>((res) => {
-			speakingIdx = idx;
-			const audio = audioParts[idx];
-
-			if (!audio) {
-				return res();
-			}
-
-			audio.play();
-			audio.onended = async () => {
-				await new Promise((r) => setTimeout(r, 300));
-
-				if (Object.keys(audioParts).length - 1 === idx) {
-					speaking = false;
-				}
-
-				res();
-			};
-		});
-	};
-
+	
 	const toggleSpeakMessage = async () => {
 		if (speaking) {
 			try {
@@ -147,95 +124,41 @@
 		}
 
 		speaking = true;
+		
+		let voices = [];
+		const getVoicesLoop = setInterval(() => {
+			voices = speechSynthesis.getVoices();
+			if (voices.length > 0) {
+				clearInterval(getVoicesLoop);
 
-		if ($config.audio.tts.engine !== '') {
-			loadingSpeech = true;
+				const voice =
+					voices
+						?.filter(
+							(v) => v.voiceURI === ($settings?.audio?.tts?.voice ?? $config?.audio?.tts?.voice)
+						)
+						?.at(0) ?? undefined;
 
-			const messageContentParts: string[] = getMessageContentParts(
-				message.content,
-				$config?.audio?.tts?.split_on ?? 'punctuation'
-			);
+				console.log(voice);
 
-			if (!messageContentParts.length) {
-				console.log('No content to speak');
-				toast.info($i18n.t('No content to speak'));
+				const speak = new SpeechSynthesisUtterance(message.content);
 
-				speaking = false;
-				loadingSpeech = false;
-				return;
-			}
+				console.log(speak);
 
-			console.debug('Prepared message content for TTS', messageContentParts);
-
-			audioParts = messageContentParts.reduce(
-				(acc, _sentence, idx) => {
-					acc[idx] = null;
-					return acc;
-				},
-				{} as typeof audioParts
-			);
-
-			let lastPlayedAudioPromise = Promise.resolve(); // Initialize a promise that resolves immediately
-
-			for (const [idx, sentence] of messageContentParts.entries()) {
-				const res = await synthesizeOpenAISpeech(
-					localStorage.token,
-					$settings?.audio?.tts?.defaultVoice === $config.audio.tts.voice
-						? ($settings?.audio?.tts?.voice ?? $config?.audio?.tts?.voice)
-						: $config?.audio?.tts?.voice,
-					sentence
-				).catch((error) => {
-					console.error(error);
-					toast.error(error);
-
+				speak.onend = () => {
 					speaking = false;
-					loadingSpeech = false;
-				});
-
-				if (res) {
-					const blob = await res.blob();
-					const blobUrl = URL.createObjectURL(blob);
-					const audio = new Audio(blobUrl);
-					audioParts[idx] = audio;
-					loadingSpeech = false;
-					lastPlayedAudioPromise = lastPlayedAudioPromise.then(() => playAudio(idx));
-				}
-			}
-		} else {
-			let voices = [];
-			const getVoicesLoop = setInterval(() => {
-				voices = speechSynthesis.getVoices();
-				if (voices.length > 0) {
-					clearInterval(getVoicesLoop);
-
-					const voice =
-						voices
-							?.filter(
-								(v) => v.voiceURI === ($settings?.audio?.tts?.voice ?? $config?.audio?.tts?.voice)
-							)
-							?.at(0) ?? undefined;
-
-					console.log(voice);
-
-					const speak = new SpeechSynthesisUtterance(message.content);
-
-					console.log(speak);
-
-					speak.onend = () => {
-						speaking = false;
-						if ($settings.conversationMode) {
-							document.getElementById('voice-input-button')?.click();
-						}
-					};
-
-					if (voice) {
-						speak.voice = voice;
+					if ($settings.conversationMode) {
+						document.getElementById('voice-input-button')?.click();
 					}
+				};
 
-					speechSynthesis.speak(speak);
+				if (voice) {
+					speak.voice = voice;
 				}
-			}, 100);
-		}
+
+				speechSynthesis.speak(speak);
+			}
+		}, 100);
+		
 	};
 
 	const editMessageHandler = async () => {

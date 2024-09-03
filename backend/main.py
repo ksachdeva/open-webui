@@ -27,7 +27,6 @@ from apps.ollama.main import (
 )
 
 
-from apps.audio.main import app as audio_app
 from apps.webui.main import app as webui_app
 from apps.webui.internal.db import Session
 
@@ -308,7 +307,6 @@ async def check_url(request: Request, call_next):
 
 app.mount("/ws", socket_app)
 app.mount("/ollama", ollama_app)
-app.mount("/audio/api/v1", audio_app)
 app.mount("/api/v1", webui_app)
 
 
@@ -492,16 +490,6 @@ async def get_app_config(request: Request):
             {
                 "default_models": webui_app.state.config.DEFAULT_MODELS,
                 "default_prompt_suggestions": webui_app.state.config.DEFAULT_PROMPT_SUGGESTIONS,
-                "audio": {
-                    "tts": {
-                        "engine": audio_app.state.config.TTS_ENGINE,
-                        "voice": audio_app.state.config.TTS_VOICE,
-                        "split_on": audio_app.state.config.TTS_SPLIT_ON,
-                    },
-                    "stt": {
-                        "engine": audio_app.state.config.STT_ENGINE,
-                    },
-                },
                 "permissions": {**webui_app.state.config.USER_PERMISSIONS},
             }
             if user is not None

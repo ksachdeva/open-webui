@@ -1,27 +1,19 @@
-<script lang="ts">
-	import { toast } from 'svelte-sonner';
-	import { onMount, tick, getContext, createEventDispatcher } from 'svelte';
-	const dispatch = createEventDispatcher();
+<script lang="ts">	
+	import { onMount, tick, getContext } from 'svelte';
 
 	import {
 		type Model,
 		mobile,
 		settings,		
-		models,
-		config,
-		showCallOverlay,		
+		models,		
 		user as _user
 	} from '$lib/stores';
 	import {  findWordIndices } from '$lib/utils';	
 
 	import {		
-		WEBUI_BASE_URL,
-		WEBUI_API_BASE_URL
+		WEBUI_BASE_URL,		
 	} from '$lib/constants';
-
-	import Tooltip from '../common/Tooltip.svelte';	
-	import Headphone from '../icons/Headphone.svelte';
-	import VoiceRecording from './MessageInput/VoiceRecording.svelte';	
+	
 	import Commands from './MessageInput/Commands.svelte';
 	import XMark from '../icons/XMark.svelte';
 
@@ -30,14 +22,12 @@
 	export let transparentBackground = false;
 
 	export let submitPrompt: Function;
-	export let stopResponse: Function;
-
+	
 	export let autoScroll = false;
 
 	export let atSelectedModel: Model | undefined;
 	export let selectedModels: [''];
-
-	let recording = false;
+	
 
 	let chatTextAreaElement: HTMLTextAreaElement;
 	
@@ -52,14 +42,8 @@
 
 	export let prompt = '';
 	export let messages = [];
-	export let availableToolIds = [];
-	export let selectedToolIds = [];
 
-	let visionCapableModels = [];
-	$: visionCapableModels = [...(atSelectedModel ? [atSelectedModel] : selectedModels)].filter(
-		(model) => $models.find((m) => m.id === model)?.info?.meta?.capabilities?.vision ?? true
-	);
-
+	
 	$: if (prompt) {
 		if (chatTextAreaElement) {
 			chatTextAreaElement.style.height = '';
@@ -197,340 +181,171 @@
 	<div class="{transparentBackground ? 'bg-transparent' : 'bg-white dark:bg-gray-900'} ">
 		<div class="max-w-6xl px-2.5 md:px-6 mx-auto inset-x-0">
 			<div class=" pb-2">				
-
-				{#if recording}
-					<VoiceRecording
-						bind:recording
-						on:cancel={async () => {
-							recording = false;
-
-							await tick();
-							document.getElementById('chat-textarea')?.focus();
-						}}
-						on:confirm={async (e) => {
-							const response = e.detail;
-							prompt = `${prompt}${response} `;
-
-							recording = false;
-
-							await tick();
-							document.getElementById('chat-textarea')?.focus();
-
-							if ($settings?.speechAutoSend ?? false) {
-								submitPrompt(prompt);
-							}
-						}}
-					/>
-				{:else}
-					<form
-						class="w-full flex gap-1.5"
-						on:submit|preventDefault={() => {
-							// check if selectedModels support image input
-							submitPrompt(prompt);
-						}}
+			
+				<form
+					class="w-full flex gap-1.5"
+					on:submit|preventDefault={() => {
+						// check if selectedModels support image input
+						submitPrompt(prompt);
+					}}
+				>
+					<div
+						class="flex-1 flex flex-col relative w-full rounded-3xl px-1.5 bg-gray-50 dark:bg-gray-850 dark:text-gray-100"
+						dir={$settings?.chatDirection ?? 'LTR'}
 					>
-						<div
-							class="flex-1 flex flex-col relative w-full rounded-3xl px-1.5 bg-gray-50 dark:bg-gray-850 dark:text-gray-100"
-							dir={$settings?.chatDirection ?? 'LTR'}
-						>
-							
-							<div class=" flex">								
+						
+						<div class=" flex">								
 
-								<textarea
-									id="chat-textarea"
-									bind:this={chatTextAreaElement}
-									class="scrollbar-hidden bg-gray-50 dark:bg-gray-850 dark:text-gray-100 outline-none w-full py-3 px-1 rounded-xl resize-none h-[48px]"
-									placeholder={chatInputPlaceholder !== ''
-										? chatInputPlaceholder
-										: $i18n.t('Send a Message')}
-									bind:value={prompt}
-									on:keypress={(e) => {
-										if (
-											!$mobile ||
-											!(
-												'ontouchstart' in window ||
-												navigator.maxTouchPoints > 0 ||
-												navigator.msMaxTouchPoints > 0
-											)
-										) {
-											// Prevent Enter key from creating a new line
-											if (e.key === 'Enter' && !e.shiftKey) {
-												e.preventDefault();
-											}
-
-											// Submit the prompt when Enter key is pressed
-											if (prompt !== '' && e.key === 'Enter' && !e.shiftKey) {
-												submitPrompt(prompt);
-											}
-										}
-									}}
-									on:keydown={async (e) => {
-										const isCtrlPressed = e.ctrlKey || e.metaKey; // metaKey is for Cmd key on Mac
-										const commandsContainerElement = document.getElementById('commands-container');
-
-										// Check if Ctrl + R is pressed
-										if (prompt === '' && isCtrlPressed && e.key.toLowerCase() === 'r') {
+							<textarea
+								id="chat-textarea"
+								bind:this={chatTextAreaElement}
+								class="scrollbar-hidden bg-gray-50 dark:bg-gray-850 dark:text-gray-100 outline-none w-full py-3 px-1 rounded-xl resize-none h-[48px]"
+								placeholder={chatInputPlaceholder !== ''
+									? chatInputPlaceholder
+									: $i18n.t('Send a Message')}
+								bind:value={prompt}
+								on:keypress={(e) => {
+									if (
+										!$mobile ||
+										!(
+											'ontouchstart' in window ||
+											navigator.maxTouchPoints > 0 ||
+											navigator.msMaxTouchPoints > 0
+										)
+									) {
+										// Prevent Enter key from creating a new line
+										if (e.key === 'Enter' && !e.shiftKey) {
 											e.preventDefault();
-											console.log('regenerate');
-
-											const regenerateButton = [
-												...document.getElementsByClassName('regenerate-response-button')
-											]?.at(-1);
-
-											regenerateButton?.click();
 										}
 
-										if (prompt === '' && e.key == 'ArrowUp') {
-											e.preventDefault();
-
-											const userMessageElement = [
-												...document.getElementsByClassName('user-message')
-											]?.at(-1);
-
-											const editButton = [
-												...document.getElementsByClassName('edit-user-message-button')
-											]?.at(-1);
-
-											console.log(userMessageElement);
-
-											userMessageElement.scrollIntoView({ block: 'center' });
-											editButton?.click();
+										// Submit the prompt when Enter key is pressed
+										if (prompt !== '' && e.key === 'Enter' && !e.shiftKey) {
+											submitPrompt(prompt);
 										}
+									}
+								}}
+								on:keydown={async (e) => {
+									const isCtrlPressed = e.ctrlKey || e.metaKey; // metaKey is for Cmd key on Mac
+									const commandsContainerElement = document.getElementById('commands-container');
 
-										if (commandsContainerElement && e.key === 'ArrowUp') {
-											e.preventDefault();
-											commandsElement.selectUp();
+									// Check if Ctrl + R is pressed
+									if (prompt === '' && isCtrlPressed && e.key.toLowerCase() === 'r') {
+										e.preventDefault();
+										console.log('regenerate');
 
-											const commandOptionButton = [
-												...document.getElementsByClassName('selected-command-option-button')
-											]?.at(-1);
-											commandOptionButton.scrollIntoView({ block: 'center' });
-										}
+										const regenerateButton = [
+											...document.getElementsByClassName('regenerate-response-button')
+										]?.at(-1);
 
-										if (commandsContainerElement && e.key === 'ArrowDown') {
-											e.preventDefault();
-											commandsElement.selectDown();
+										regenerateButton?.click();
+									}
 
-											const commandOptionButton = [
-												...document.getElementsByClassName('selected-command-option-button')
-											]?.at(-1);
-											commandOptionButton.scrollIntoView({ block: 'center' });
-										}
+									if (prompt === '' && e.key == 'ArrowUp') {
+										e.preventDefault();
 
-										if (commandsContainerElement && e.key === 'Enter') {
-											e.preventDefault();
+										const userMessageElement = [
+											...document.getElementsByClassName('user-message')
+										]?.at(-1);
 
-											const commandOptionButton = [
-												...document.getElementsByClassName('selected-command-option-button')
-											]?.at(-1);
+										const editButton = [
+											...document.getElementsByClassName('edit-user-message-button')
+										]?.at(-1);
 
-											if (e.shiftKey) {
-												prompt = `${prompt}\n`;
-											} else if (commandOptionButton) {
-												commandOptionButton?.click();
-											} else {
-												document.getElementById('send-message-button')?.click();
-											}
-										}
+										console.log(userMessageElement);
 
-										if (commandsContainerElement && e.key === 'Tab') {
-											e.preventDefault();
+										userMessageElement.scrollIntoView({ block: 'center' });
+										editButton?.click();
+									}
 
-											const commandOptionButton = [
-												...document.getElementsByClassName('selected-command-option-button')
-											]?.at(-1);
+									if (commandsContainerElement && e.key === 'ArrowUp') {
+										e.preventDefault();
+										commandsElement.selectUp();
 
+										const commandOptionButton = [
+											...document.getElementsByClassName('selected-command-option-button')
+										]?.at(-1);
+										commandOptionButton.scrollIntoView({ block: 'center' });
+									}
+
+									if (commandsContainerElement && e.key === 'ArrowDown') {
+										e.preventDefault();
+										commandsElement.selectDown();
+
+										const commandOptionButton = [
+											...document.getElementsByClassName('selected-command-option-button')
+										]?.at(-1);
+										commandOptionButton.scrollIntoView({ block: 'center' });
+									}
+
+									if (commandsContainerElement && e.key === 'Enter') {
+										e.preventDefault();
+
+										const commandOptionButton = [
+											...document.getElementsByClassName('selected-command-option-button')
+										]?.at(-1);
+
+										if (e.shiftKey) {
+											prompt = `${prompt}\n`;
+										} else if (commandOptionButton) {
 											commandOptionButton?.click();
-										} else if (e.key === 'Tab') {
-											const words = findWordIndices(prompt);
+										} else {
+											document.getElementById('send-message-button')?.click();
+										}
+									}
 
-											if (words.length > 0) {
-												const word = words.at(0);
-												const fullPrompt = prompt;
+									if (commandsContainerElement && e.key === 'Tab') {
+										e.preventDefault();
 
-												prompt = prompt.substring(0, word?.endIndex + 1);
-												await tick();
+										const commandOptionButton = [
+											...document.getElementsByClassName('selected-command-option-button')
+										]?.at(-1);
 
-												e.target.scrollTop = e.target.scrollHeight;
-												prompt = fullPrompt;
-												await tick();
+										commandOptionButton?.click();
+									} else if (e.key === 'Tab') {
+										const words = findWordIndices(prompt);
 
-												e.preventDefault();
-												e.target.setSelectionRange(word?.startIndex, word.endIndex + 1);
-											}
+										if (words.length > 0) {
+											const word = words.at(0);
+											const fullPrompt = prompt;
 
-											e.target.style.height = '';
-											e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+											prompt = prompt.substring(0, word?.endIndex + 1);
+											await tick();
+
+											e.target.scrollTop = e.target.scrollHeight;
+											prompt = fullPrompt;
+											await tick();
+
+											e.preventDefault();
+											e.target.setSelectionRange(word?.startIndex, word.endIndex + 1);
 										}
 
-										if (e.key === 'Escape') {
-											console.log('Escape');
-											atSelectedModel = undefined;
-										}
-									}}
-									rows="1"
-									on:input={async (e) => {
 										e.target.style.height = '';
 										e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
-										user = null;
-									}}
-									on:focus={async (e) => {
-										e.target.style.height = '';
-										e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
-									}}
-									
-								/>
+									}
 
-								<div class="self-end mb-2 flex space-x-1 mr-1">
-									{#if messages.length == 0 || messages.at(-1).done == true}
-										<Tooltip content={$i18n.t('Record voice')}>
-											<button
-												id="voice-input-button"
-												class=" text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850 transition rounded-full p-1.5 mr-0.5 self-center"
-												type="button"
-												on:click={async () => {
-													try {
-														let stream = await navigator.mediaDevices
-															.getUserMedia({ audio: true })
-															.catch(function (err) {
-																toast.error(
-																	$i18n.t(
-																		`Permission denied when accessing microphone: {{error}}`,
-																		{
-																			error: err
-																		}
-																	)
-																);
-																return null;
-															});
-
-														if (stream) {
-															recording = true;
-															const tracks = stream.getTracks();
-															tracks.forEach((track) => track.stop());
-														}
-														stream = null;
-													} catch {
-														toast.error($i18n.t('Permission denied when accessing microphone'));
-													}
-												}}
-											>
-												<svg
-													xmlns="http://www.w3.org/2000/svg"
-													viewBox="0 0 20 20"
-													fill="currentColor"
-													class="w-5 h-5 translate-y-[0.5px]"
-												>
-													<path d="M7 4a3 3 0 016 0v6a3 3 0 11-6 0V4z" />
-													<path
-														d="M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5h-1.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z"
-													/>
-												</svg>
-											</button>
-										</Tooltip>
-									{/if}
-								</div>
-							</div>
+									if (e.key === 'Escape') {
+										console.log('Escape');
+										atSelectedModel = undefined;
+									}
+								}}
+								rows="1"
+								on:input={async (e) => {
+									e.target.style.height = '';
+									e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+									user = null;
+								}}
+								on:focus={async (e) => {
+									e.target.style.height = '';
+									e.target.style.height = Math.min(e.target.scrollHeight, 200) + 'px';
+								}}
+								
+							/>
+							
 						</div>
-						<div class="flex items-end w-10">
-							{#if messages.length == 0 || messages.at(-1).done == true}
-								{#if prompt === ''}
-									<div class=" flex items-center mb-1">
-										<Tooltip content={$i18n.t('Call')}>
-											<button
-												class=" text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-850 transition rounded-full p-2 self-center"
-												type="button"
-												on:click={async () => {
-													if (selectedModels.length > 1) {
-														toast.error($i18n.t('Select only one model to call'));
-
-														return;
-													}
-
-													if ($config.audio.stt.engine === 'web') {
-														toast.error(
-															$i18n.t('Call feature is not supported when using Web STT engine')
-														);
-
-														return;
-													}
-													// check if user has access to getUserMedia
-													try {
-														let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-														// If the user grants the permission, proceed to show the call overlay
-
-														if (stream) {
-															const tracks = stream.getTracks();
-															tracks.forEach((track) => track.stop());
-														}
-
-														stream = null;
-
-														showCallOverlay.set(true);
-														dispatch('call');
-													} catch (err) {
-														// If the user denies the permission or an error occurs, show an error message
-														toast.error($i18n.t('Permission denied when accessing media devices'));
-													}
-												}}
-											>
-												<Headphone className="size-6" />
-											</button>
-										</Tooltip>
-									</div>
-								{:else}
-									<div class=" flex items-center mb-1">
-										<Tooltip content={$i18n.t('Send message')}>
-											<button
-												id="send-message-button"
-												class="{prompt !== ''
-													? 'bg-black text-white hover:bg-gray-900 dark:bg-white dark:text-black dark:hover:bg-gray-100 '
-													: 'text-white bg-gray-200 dark:text-gray-900 dark:bg-gray-700 disabled'} transition rounded-full p-1.5 m-0.5 self-center"
-												type="submit"
-												disabled={prompt === ''}
-											>
-												<svg
-													xmlns="http://www.w3.org/2000/svg"
-													viewBox="0 0 16 16"
-													fill="currentColor"
-													class="size-6"
-												>
-													<path
-														fill-rule="evenodd"
-														d="M8 14a.75.75 0 0 1-.75-.75V4.56L4.03 7.78a.75.75 0 0 1-1.06-1.06l4.5-4.5a.75.75 0 0 1 1.06 0l4.5 4.5a.75.75 0 0 1-1.06 1.06L8.75 4.56v8.69A.75.75 0 0 1 8 14Z"
-														clip-rule="evenodd"
-													/>
-												</svg>
-											</button>
-										</Tooltip>
-									</div>
-								{/if}
-							{:else}
-								<div class=" flex items-center mb-1.5">
-									<button
-										class="bg-white hover:bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-white dark:hover:bg-gray-800 transition rounded-full p-1.5"
-										on:click={() => {
-											stopResponse();
-										}}
-									>
-										<svg
-											xmlns="http://www.w3.org/2000/svg"
-											viewBox="0 0 24 24"
-											fill="currentColor"
-											class="size-6"
-										>
-											<path
-												fill-rule="evenodd"
-												d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm6-2.438c0-.724.588-1.312 1.313-1.312h4.874c.725 0 1.313.588 1.313 1.313v4.874c0 .725-.588 1.313-1.313 1.313H9.564a1.312 1.312 0 01-1.313-1.313V9.564z"
-												clip-rule="evenodd"
-											/>
-										</svg>
-									</button>
-								</div>
-							{/if}
-						</div>
-					</form>
-				{/if}
+					</div>
+					
+				</form>
+				
 
 				<div class="mt-1.5 text-xs text-gray-500 text-center line-clamp-1">
 					{$i18n.t('LLMs can make mistakes. Verify important information.')}

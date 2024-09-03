@@ -22,16 +22,14 @@
 		WEBUI_NAME,
 		banners,
 		user,
-		socket,
-		showCallOverlay,
+		socket,		
 		currentChatPage,
 		temporaryChatEnabled
 	} from '$lib/stores';
 	import {
 		convertMessagesToHistory,
 		copyToClipboard,
-		getMessageContentParts,
-		extractSentencesForAudio,
+		getMessageContentParts,		
 		promptTemplate,
 		splitStream
 	} from '$lib/utils';
@@ -87,8 +85,7 @@
 	let selectedModelIds = [];
 	$: selectedModelIds = atSelectedModel !== undefined ? [atSelectedModel.id] : selectedModels;
 
-	let selectedToolIds = [];
-	let webSearchEnabled = false;
+	let selectedToolIds = [];	
 
 	let chat = null;
 	let tags = [];
@@ -305,9 +302,6 @@
 			}
 		}
 
-		if ($page.url.searchParams.get('call') === 'true') {
-			showCallOverlay.set(true);
-		}
 
 		selectedModels = selectedModels.map((modelId) =>
 			$models.map((m) => m.id).includes(modelId) ? modelId : ''
@@ -911,8 +905,7 @@
 									}
 
 									const messageContentParts = getMessageContentParts(
-										responseMessage.content,
-										$config?.audio?.tts?.split_on ?? 'punctuation'
+										responseMessage.content
 									);
 									messageContentParts.pop();
 
@@ -970,7 +963,7 @@
 									copyToClipboard(responseMessage.content);
 								}
 
-								if ($settings.responseAutoPlayback && !$showCallOverlay) {
+								if ($settings.responseAutoPlayback) {
 									await tick();
 									document.getElementById(`speak-button-${responseMessage.id}`)?.click();
 								}
@@ -1041,8 +1034,7 @@
 
 		let lastMessageContentPart =
 			getMessageContentParts(
-				responseMessage.content,
-				$config?.audio?.tts?.split_on ?? 'punctuation'
+				responseMessage.content
 			)?.at(-1) ?? '';
 		if (lastMessageContentPart) {
 			eventTarget.dispatchEvent(
@@ -1266,8 +1258,7 @@
 		<Navbar
 			{title}
 			bind:selectedModels
-			bind:showModelSelector
-			bind:showControls
+			bind:showModelSelector			
 			shareEnabled={messages.length > 0}
 			{chat}
 			{initNewChat}
@@ -1337,22 +1328,12 @@
 			<div class={showControls ? 'lg:pr-[24rem]' : ''}>
 				<MessageInput					
 					bind:prompt
-					bind:autoScroll
-					bind:selectedToolIds
-					bind:webSearchEnabled
-					bind:atSelectedModel
-					availableToolIds={selectedModelIds.reduce((a, e, i, arr) => {
-						const model = $models.find((m) => m.id === e);
-						if (model?.info?.meta?.toolIds ?? false) {
-							return [...new Set([...a, ...model.info.meta.toolIds])];
-						}
-						return a;
-					}, [])}
+					bind:autoScroll										
+					bind:atSelectedModel					
 					transparentBackground={$settings?.backgroundImageUrl ?? false}
 					{selectedModels}
 					{messages}
-					{submitPrompt}
-					{stopResponse}
+					{submitPrompt}					
 					on:call={() => {
 						showControls = true;
 					}}
