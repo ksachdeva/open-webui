@@ -4,10 +4,8 @@
 	import { createEventDispatcher } from 'svelte';
 
 	import { mobile, settings } from '$lib/stores';
-
-	import { generateMoACompletion } from '$lib/apis';
-	import { updateChatById } from '$lib/apis/chats';
-	import { createOpenAITextStream } from '$lib/apis/streaming';
+	
+	import { updateChatById } from '$lib/apis/chats';	
 
 	import ResponseMessage from './ResponseMessage.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';

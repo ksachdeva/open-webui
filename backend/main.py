@@ -45,11 +45,6 @@ from utils.utils import (
     get_http_authorization_cred,
     decode_token,
 )
-from utils.task import (
-    title_generation_template,
-    search_query_generation_template,
-    moa_response_generation_template,
-)
 
 
 from config import (
@@ -70,12 +65,6 @@ from config import (
     SRC_LOG_LEVELS,
     ENABLE_ADMIN_EXPORT,
     WEBUI_BUILD_HASH,
-    TASK_MODEL,
-    TASK_MODEL_EXTERNAL,
-    TITLE_GENERATION_PROMPT_TEMPLATE,
-    SEARCH_QUERY_GENERATION_PROMPT_TEMPLATE,
-    SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD,
-    TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE,
     SAFE_MODE,
     WEBUI_SECRET_KEY,
     WEBUI_SESSION_COOKIE_SAME_SITE,
@@ -85,7 +74,7 @@ from config import (
     CORS_ALLOW_ORIGIN,
 )
 
-from constants import ERROR_MESSAGES, TASKS
+from constants import ERROR_MESSAGES
 
 if SAFE_MODE:
     print("SAFE MODE ENABLED")
@@ -145,19 +134,6 @@ app.state.config.ENABLE_MODEL_FILTER = ENABLE_MODEL_FILTER
 app.state.config.MODEL_FILTER_LIST = MODEL_FILTER_LIST
 
 
-app.state.config.TASK_MODEL = TASK_MODEL
-app.state.config.TASK_MODEL_EXTERNAL = TASK_MODEL_EXTERNAL
-app.state.config.TITLE_GENERATION_PROMPT_TEMPLATE = TITLE_GENERATION_PROMPT_TEMPLATE
-app.state.config.SEARCH_QUERY_GENERATION_PROMPT_TEMPLATE = (
-    SEARCH_QUERY_GENERATION_PROMPT_TEMPLATE
-)
-app.state.config.SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD = (
-    SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD
-)
-app.state.config.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE = (
-    TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE
-)
-
 app.state.MODELS = {}
 
 
@@ -166,26 +142,6 @@ app.state.MODELS = {}
 # ChatCompletion Middleware
 #
 ##################################
-
-
-def get_task_model_id(default_model_id):
-    # Set the task model
-    task_model_id = default_model_id
-    # Check if the user has a custom task model and use that model
-    if app.state.MODELS[task_model_id]["owned_by"] == "ollama":
-        if (
-            app.state.config.TASK_MODEL
-            and app.state.config.TASK_MODEL in app.state.MODELS
-        ):
-            task_model_id = app.state.config.TASK_MODEL
-    else:
-        if (
-            app.state.config.TASK_MODEL_EXTERNAL
-            and app.state.config.TASK_MODEL_EXTERNAL in app.state.MODELS
-        ):
-            task_model_id = app.state.config.TASK_MODEL_EXTERNAL
-
-    return task_model_id
 
 
 async def get_content_from_response(response) -> Optional[str]:
@@ -492,255 +448,6 @@ async def chat_completed(form_data: dict, user=Depends(get_verified_user)):
         )
 
     return data
-
-
-##################################
-#
-# Task Endpoints
-#
-##################################
-
-
-# TODO: Refactor task API endpoints below into a separate file
-
-
-@app.get("/api/task/config")
-async def get_task_config(user=Depends(get_verified_user)):
-    return {
-        "TASK_MODEL": app.state.config.TASK_MODEL,
-        "TASK_MODEL_EXTERNAL": app.state.config.TASK_MODEL_EXTERNAL,
-        "TITLE_GENERATION_PROMPT_TEMPLATE": app.state.config.TITLE_GENERATION_PROMPT_TEMPLATE,
-        "SEARCH_QUERY_GENERATION_PROMPT_TEMPLATE": app.state.config.SEARCH_QUERY_GENERATION_PROMPT_TEMPLATE,
-        "SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD": app.state.config.SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD,
-        "TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE": app.state.config.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE,
-    }
-
-
-class TaskConfigForm(BaseModel):
-    TASK_MODEL: Optional[str]
-    TASK_MODEL_EXTERNAL: Optional[str]
-    TITLE_GENERATION_PROMPT_TEMPLATE: str
-    SEARCH_QUERY_GENERATION_PROMPT_TEMPLATE: str
-    SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD: int
-    TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE: str
-
-
-@app.post("/api/task/config/update")
-async def update_task_config(form_data: TaskConfigForm, user=Depends(get_admin_user)):
-    app.state.config.TASK_MODEL = form_data.TASK_MODEL
-    app.state.config.TASK_MODEL_EXTERNAL = form_data.TASK_MODEL_EXTERNAL
-    app.state.config.TITLE_GENERATION_PROMPT_TEMPLATE = (
-        form_data.TITLE_GENERATION_PROMPT_TEMPLATE
-    )
-    app.state.config.SEARCH_QUERY_GENERATION_PROMPT_TEMPLATE = (
-        form_data.SEARCH_QUERY_GENERATION_PROMPT_TEMPLATE
-    )
-    app.state.config.SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD = (
-        form_data.SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD
-    )
-    app.state.config.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE = (
-        form_data.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE
-    )
-
-    return {
-        "TASK_MODEL": app.state.config.TASK_MODEL,
-        "TASK_MODEL_EXTERNAL": app.state.config.TASK_MODEL_EXTERNAL,
-        "TITLE_GENERATION_PROMPT_TEMPLATE": app.state.config.TITLE_GENERATION_PROMPT_TEMPLATE,
-        "SEARCH_QUERY_GENERATION_PROMPT_TEMPLATE": app.state.config.SEARCH_QUERY_GENERATION_PROMPT_TEMPLATE,
-        "SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD": app.state.config.SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD,
-        "TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE": app.state.config.TOOLS_FUNCTION_CALLING_PROMPT_TEMPLATE,
-    }
-
-
-@app.post("/api/task/title/completions")
-async def generate_title(form_data: dict, user=Depends(get_verified_user)):
-    print("generate_title")
-
-    model_id = form_data["model"]
-    if model_id not in app.state.MODELS:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Model not found",
-        )
-
-    # Check if the user has a custom task model
-    # If the user has a custom task model, use that model
-    model_id = get_task_model_id(model_id)
-
-    print(model_id)
-
-    template = app.state.config.TITLE_GENERATION_PROMPT_TEMPLATE
-
-    content = title_generation_template(
-        template,
-        form_data["prompt"],
-        {
-            "name": user.name,
-            "location": user.info.get("location") if user.info else None,
-        },
-    )
-
-    payload = {
-        "model": model_id,
-        "messages": [{"role": "user", "content": content}],
-        "stream": False,
-        "max_tokens": 50,
-        "chat_id": form_data.get("chat_id", None),
-        "metadata": {"task": str(TASKS.TITLE_GENERATION)},
-    }
-
-    log.debug(payload)
-
-    if "chat_id" in payload:
-        del payload["chat_id"]
-
-    return await generate_chat_completions(form_data=payload, user=user)
-
-
-@app.post("/api/task/query/completions")
-async def generate_search_query(form_data: dict, user=Depends(get_verified_user)):
-    print("generate_search_query")
-
-    if len(form_data["prompt"]) < app.state.config.SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Skip search query generation for short prompts (< {app.state.config.SEARCH_QUERY_PROMPT_LENGTH_THRESHOLD} characters)",
-        )
-
-    model_id = form_data["model"]
-    if model_id not in app.state.MODELS:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Model not found",
-        )
-
-    # Check if the user has a custom task model
-    # If the user has a custom task model, use that model
-    model_id = get_task_model_id(model_id)
-
-    print(model_id)
-
-    template = app.state.config.SEARCH_QUERY_GENERATION_PROMPT_TEMPLATE
-
-    content = search_query_generation_template(
-        template, form_data["prompt"], {"name": user.name}
-    )
-
-    payload = {
-        "model": model_id,
-        "messages": [{"role": "user", "content": content}],
-        "stream": False,
-        "max_tokens": 30,
-        "metadata": {"task": str(TASKS.QUERY_GENERATION)},
-    }
-
-    print(payload)
-
-    try:
-        payload = filter_pipeline(payload, user)
-    except Exception as e:
-        return JSONResponse(
-            status_code=e.args[0],
-            content={"detail": e.args[1]},
-        )
-
-    if "chat_id" in payload:
-        del payload["chat_id"]
-
-    return await generate_chat_completions(form_data=payload, user=user)
-
-
-@app.post("/api/task/emoji/completions")
-async def generate_emoji(form_data: dict, user=Depends(get_verified_user)):
-    print("generate_emoji")
-
-    model_id = form_data["model"]
-    if model_id not in app.state.MODELS:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Model not found",
-        )
-
-    # Check if the user has a custom task model
-    # If the user has a custom task model, use that model
-    model_id = get_task_model_id(model_id)
-
-    print(model_id)
-
-    template = '''
-Your task is to reflect the speaker's likely facial expression through a fitting emoji. Interpret emotions from the message and reflect their facial expression using fitting, diverse emojis (e.g., 😊, 😢, 😡, 😱).
-
-Message: """{{prompt}}"""
-'''
-
-    content = title_generation_template(
-        template,
-        form_data["prompt"],
-        {
-            "name": user.name,
-            "location": user.info.get("location") if user.info else None,
-        },
-    )
-
-    payload = {
-        "model": model_id,
-        "messages": [{"role": "user", "content": content}],
-        "stream": False,
-        "max_tokens": 4,
-        "chat_id": form_data.get("chat_id", None),
-        "metadata": {"task": str(TASKS.EMOJI_GENERATION)},
-    }
-
-    log.debug(payload)
-
-    if "chat_id" in payload:
-        del payload["chat_id"]
-
-    return await generate_chat_completions(form_data=payload, user=user)
-
-
-@app.post("/api/task/moa/completions")
-async def generate_moa_response(form_data: dict, user=Depends(get_verified_user)):
-    print("generate_moa_response")
-
-    model_id = form_data["model"]
-    if model_id not in app.state.MODELS:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Model not found",
-        )
-
-    # Check if the user has a custom task model
-    # If the user has a custom task model, use that model
-    model_id = get_task_model_id(model_id)
-    print(model_id)
-
-    template = """You have been provided with a set of responses from various models to the latest user query: "{{prompt}}"
-
-Your task is to synthesize these responses into a single, high-quality response. It is crucial to critically evaluate the information provided in these responses, recognizing that some of it may be biased or incorrect. Your response should not simply replicate the given answers but should offer a refined, accurate, and comprehensive reply to the instruction. Ensure your response is well-structured, coherent, and adheres to the highest standards of accuracy and reliability.
-
-Responses from models: {{responses}}"""
-
-    content = moa_response_generation_template(
-        template,
-        form_data["prompt"],
-        form_data["responses"],
-    )
-
-    payload = {
-        "model": model_id,
-        "messages": [{"role": "user", "content": content}],
-        "stream": form_data.get("stream", False),
-        "chat_id": form_data.get("chat_id", None),
-        "metadata": {"task": str(TASKS.MOA_RESPONSE_GENERATION)},
-    }
-
-    log.debug(payload)
-
-    if "chat_id" in payload:
-        del payload["chat_id"]
-
-    return await generate_chat_completions(form_data=payload, user=user)
 
 
 ##################################

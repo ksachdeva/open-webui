@@ -49,11 +49,8 @@
 	
 	import { getAndUpdateUserLocation, getUserSettings } from '$lib/apis/users';
 	import {
-		chatCompleted,
-		generateTitle,
-		generateSearchQuery,
-		chatAction,
-		generateMoACompletion
+		chatCompleted,		
+		chatAction		
 	} from '$lib/apis';
 
 	import Banner from '../common/Banner.svelte';
@@ -1130,22 +1127,8 @@
 		}
 	};
 
-	const generateChatTitle = async (userPrompt) => {
-		if ($settings?.title?.auto ?? true) {
-			const title = await generateTitle(
-				localStorage.token,
-				selectedModels[0],
-				userPrompt,
-				$chatId
-			).catch((error) => {
-				console.error(error);
-				return 'New Chat';
-			});
-
-			return title;
-		} else {
-			return `${userPrompt}`;
-		}
+	const generateChatTitle = async (userPrompt) => {		
+		return `${userPrompt}`;		
 	};
 
 	const setChatTitle = async (_chatId, _title) => {
