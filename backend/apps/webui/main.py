@@ -4,11 +4,9 @@ from apps.webui.routers import (
     auths,
     users,
     chats,
-    tools,
     models,
     configs,
     utils,
-    functions,
 )
 
 
