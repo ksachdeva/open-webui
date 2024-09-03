@@ -5,8 +5,6 @@ import sys
 import subprocess
 
 
-from apps.webui.models.tools import Tools
-from apps.webui.models.functions import Functions
 from config import TOOLS_DIR, FUNCTIONS_DIR
 
 

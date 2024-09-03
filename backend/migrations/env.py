@@ -13,9 +13,8 @@ from apps.webui.models.chats import Chat
 from apps.webui.models.models import Model
 
 from apps.webui.models.tags import Tag, ChatIdTag
-from apps.webui.models.tools import Tool
 from apps.webui.models.users import User
-from apps.webui.models.functions import Function
+
 
 from env import DATABASE_URL
 
