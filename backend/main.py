@@ -31,10 +31,7 @@ from apps.ollama.main import (
 
 from apps.audio.main import app as audio_app
 from apps.images.main import app as images_app
-from apps.webui.main import (
-    app as webui_app,
-    generate_function_chat_completion,
-)
+from apps.webui.main import app as webui_app
 from apps.webui.internal.db import Session
 
 
@@ -955,12 +952,13 @@ async def generate_chat_completions(form_data: dict, user=Depends(get_verified_u
             )
 
     model = app.state.MODELS[model_id]
-    if model.get("pipe"):
-        return await generate_function_chat_completion(form_data, user=user)
     if model["owned_by"] == "ollama":
         return await generate_ollama_chat_completion(form_data, user=user)
     else:
-        return await generate_openai_chat_completion(form_data, user=user)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Model not found",
+        )
 
 
 @app.post("/api/chat/completed")
