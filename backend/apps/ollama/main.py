@@ -40,7 +40,6 @@ from config import (
     AIOHTTP_CLIENT_TIMEOUT,
     ENABLE_MODEL_FILTER,
     MODEL_FILTER_LIST,
-    UPLOAD_DIR,
     AppConfig,
     CORS_ALLOW_ORIGIN,
 )

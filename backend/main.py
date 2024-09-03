@@ -37,9 +37,8 @@ from apps.webui.internal.db import Session
 from pydantic import BaseModel
 
 from apps.webui.models.models import Models
-from apps.webui.models.users import Users, UserModel
+from apps.webui.models.users import Users
 
-from apps.webui.utils import load_function_module_by_id
 
 from utils.utils import (
     get_admin_user,
