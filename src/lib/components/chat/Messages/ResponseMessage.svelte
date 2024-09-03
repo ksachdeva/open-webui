@@ -10,13 +10,9 @@
 	const dispatch = createEventDispatcher();
 
 	import { config, models, settings, user } from '$lib/stores';
-	import { synthesizeOpenAISpeech } from '$lib/apis/audio';
-	import { imageGenerations } from '$lib/apis/images';
+	import { synthesizeOpenAISpeech } from '$lib/apis/audio';	
 	import {
-		approximateToHumanReadable,
-		extractParagraphsForAudio,
-		extractSentencesForAudio,
-		cleanText,
+		approximateToHumanReadable,		
 		getMessageContentParts
 	} from '$lib/utils';
 	import { WEBUI_BASE_URL } from '$lib/constants';
@@ -27,8 +23,7 @@
 	import Image from '$lib/components/common/Image.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import RateComment from './RateComment.svelte';
-	import Spinner from '$lib/components/common/Spinner.svelte';
-	import WebSearchResults from './ResponseMessage/WebSearchResults.svelte';
+	import Spinner from '$lib/components/common/Spinner.svelte';	
 	import Sparkles from '$lib/components/icons/Sparkles.svelte';
 	import Markdown from './Markdown.svelte';
 	import Error from './Error.svelte';
@@ -105,7 +100,6 @@
 	let speakingIdx: number | undefined;
 
 	let loadingSpeech = false;
-	let generatingImage = false;
 
 	let showRateComment = false;
 
@@ -273,24 +267,7 @@
 		await tick();
 	};
 
-	const generateImage = async (message: MessageType) => {
-		generatingImage = true;
-		const res = await imageGenerations(localStorage.token, message.content).catch((error) => {
-			toast.error(error);
-		});
-		console.log(res);
-
-		if (res) {
-			message.files = res.map((image) => ({
-				type: 'image',
-				url: `${image.url}`
-			}));
-
-			dispatch('save', message);
-		}
-
-		generatingImage = false;
-	};
+	
 
 	$: if (!edit) {
 		(async () => {
@@ -352,24 +329,15 @@
 										<Spinner className="size-4" />
 									</div>
 								{/if}
-
-								{#if status?.action === 'web_search' && status?.urls}
-									<WebSearchResults {status}>
-										<div class="flex flex-col justify-center -space-y-0.5">
-											<div class="shimmer text-base line-clamp-1 text-wrap">
-												{status?.description}
-											</div>
-										</div>
-									</WebSearchResults>
-								{:else}
-									<div class="flex flex-col justify-center -space-y-0.5">
-										<div
-											class="shimmer text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
-										>
-											{status?.description}
-										</div>
+								
+								<div class="flex flex-col justify-center -space-y-0.5">
+									<div
+										class="shimmer text-gray-500 dark:text-gray-500 text-base line-clamp-1 text-wrap"
+									>
+										{status?.description}
 									</div>
-								{/if}
+								</div>
+								
 							</div>
 						{/if}
 
@@ -634,67 +602,7 @@
 									</button>
 								</Tooltip>
 
-								{#if $config?.features.enable_image_generation && !readOnly}
-									<Tooltip content={$i18n.t('Generate Image')} placement="bottom">
-										<button
-											class="{isLastMessage
-												? 'visible'
-												: 'invisible group-hover:visible'}  p-1.5 hover:bg-black/5 dark:hover:bg-white/5 rounded-lg dark:hover:text-white hover:text-black transition"
-											on:click={() => {
-												if (!generatingImage) {
-													generateImage(message);
-												}
-											}}
-										>
-											{#if generatingImage}
-												<svg
-													class=" w-4 h-4"
-													fill="currentColor"
-													viewBox="0 0 24 24"
-													xmlns="http://www.w3.org/2000/svg"
-													><style>
-														.spinner_S1WN {
-															animation: spinner_MGfb 0.8s linear infinite;
-															animation-delay: -0.8s;
-														}
-														.spinner_Km9P {
-															animation-delay: -0.65s;
-														}
-														.spinner_JApP {
-															animation-delay: -0.5s;
-														}
-														@keyframes spinner_MGfb {
-															93.75%,
-															100% {
-																opacity: 0.2;
-															}
-														}
-													</style><circle class="spinner_S1WN" cx="4" cy="12" r="3" /><circle
-														class="spinner_S1WN spinner_Km9P"
-														cx="12"
-														cy="12"
-														r="3"
-													/><circle class="spinner_S1WN spinner_JApP" cx="20" cy="12" r="3" /></svg
-												>
-											{:else}
-												<svg
-													xmlns="http://www.w3.org/2000/svg"
-													fill="none"
-													viewBox="0 0 24 24"
-													stroke-width="2.3"
-													stroke="currentColor"
-													class="w-4 h-4"
-												>
-													<path
-														stroke-linecap="round"
-														stroke-linejoin="round"
-														d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
-													/>
-												</svg>
-											{/if}
-										</button>
-									</Tooltip>
-								{/if}
+								
 
 								{#if message.info}
 									<Tooltip
