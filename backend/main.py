@@ -6,7 +6,6 @@ import sys
 import logging
 import aiohttp
 import mimetypes
-import inspect
 from typing import Optional
 
 from fastapi import FastAPI, Request, Depends, status
@@ -135,7 +134,9 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    docs_url="/docs" if ENV == "dev" else None, redoc_url=None, lifespan=lifespan
+    docs_url="/docs" if ENV == "dev" else None,
+    redoc_url=None,
+    lifespan=lifespan,
 )
 
 app.state.config = AppConfig()
