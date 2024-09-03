@@ -9,8 +9,7 @@
 		chatId,
 		tags,
 		showSidebar,
-		mobile,
-		showArchivedChats,
+		mobile,		
 		pinnedChats,
 		scrollPaginationEnabled,
 		currentChatPage,
@@ -27,13 +26,11 @@
 		getChatById,
 		getChatListByTagName,
 		updateChatById,
-		getAllChatTags,
-		archiveChatById,
+		getAllChatTags,		
 		cloneChatById
 	} from '$lib/apis/chats';
 	import { WEBUI_BASE_URL } from '$lib/constants';
-
-	import ArchivedChatsModal from './Sidebar/ArchivedChatsModal.svelte';
+	
 	import UserMenu from './Sidebar/UserMenu.svelte';
 	import ChatItem from './Sidebar/ChatItem.svelte';
 	import DeleteConfirmDialog from '$lib/components/common/ConfirmDialog.svelte';
@@ -226,12 +223,6 @@
 	};
 </script>
 
-<ArchivedChatsModal
-	bind:show={$showArchivedChats}
-	on:change={async () => {
-		await chats.set(await getChatList(localStorage.token));
-	}}
-/>
 
 <DeleteConfirmDialog
 	bind:show={showDeleteConfirm}
@@ -521,9 +512,7 @@
 					<UserMenu
 						role={$user.role}
 						on:show={(e) => {
-							if (e.detail === 'archived-chat') {
-								showArchivedChats.set(true);
-							}
+							
 						}}
 					>
 						<button

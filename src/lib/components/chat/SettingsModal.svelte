@@ -12,9 +12,6 @@
 	import General from './Settings/General.svelte';
 	import Interface from './Settings/Interface.svelte';
 	import Audio from './Settings/Audio.svelte';
-	import Chats from './Settings/Chats.svelte';
-	import User from '../icons/User.svelte';
-	
 
 	const i18n = getContext('i18n');
 
@@ -171,33 +168,7 @@
 						</svg>
 					</div>
 					<div class=" self-center">{$i18n.t('Audio')}</div>
-				</button>
-
-				<button
-					class="px-2.5 py-2.5 min-w-fit rounded-lg flex-1 md:flex-none flex text-left transition {selectedTab ===
-					'chats'
-						? 'bg-gray-200 dark:bg-gray-800'
-						: ' hover:bg-gray-100 dark:hover:bg-gray-850'}"
-					on:click={() => {
-						selectedTab = 'chats';
-					}}
-				>
-					<div class=" self-center mr-2">
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							viewBox="0 0 16 16"
-							fill="currentColor"
-							class="w-4 h-4"
-						>
-							<path
-								fill-rule="evenodd"
-								d="M8 2C4.262 2 1 4.57 1 8c0 1.86.98 3.486 2.455 4.566a3.472 3.472 0 0 1-.469 1.26.75.75 0 0 0 .713 1.14 6.961 6.961 0 0 0 3.06-1.06c.403.062.818.094 1.241.094 3.738 0 7-2.57 7-6s-3.262-6-7-6ZM5 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm7-1a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM8 9a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z"
-								clip-rule="evenodd"
-							/>
-						</svg>
-					</div>
-					<div class=" self-center">{$i18n.t('Chats')}</div>
-				</button>
+				</button>				
 
 				<button
 					class="px-2.5 py-2.5 min-w-fit rounded-lg flex-1 md:flex-none flex text-left transition {selectedTab ===
@@ -282,9 +253,7 @@
 			</div>
 			<div class="flex-1 md:min-h-[28rem]">
 				{#if selectedTab === 'general'}
-					<General
-						{getModels}
-						{saveSettings}
+					<General						
 						on:save={() => {
 							toast.success($i18n.t('Settings saved successfully!'));
 						}}
@@ -304,8 +273,7 @@
 							toast.success($i18n.t('Settings saved successfully!'));
 						}}
 					/>
-				{:else if selectedTab === 'chats'}
-					<Chats {saveSettings} />
+				
 				{:else if selectedTab === 'account'}
 					<Account
 						saveHandler={() => {

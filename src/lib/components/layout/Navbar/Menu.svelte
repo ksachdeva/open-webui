@@ -4,14 +4,11 @@
 
 	import fileSaver from 'file-saver';
 	const { saveAs } = fileSaver;
-
-	import { showSettings } from '$lib/stores';
+	
 	import { flyAndScale } from '$lib/utils/transitions';
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
-	import Tags from '$lib/components/chat/Tags.svelte';
-
-	import { downloadChatAsPDF } from '$lib/apis/utils';
+	import Tags from '$lib/components/chat/Tags.svelte';	
 
 	const i18n = getContext('i18n');
 
@@ -39,30 +36,7 @@
 		saveAs(blob, `chat-${_chat.title}.txt`);
 	};
 
-	const downloadPdf = async () => {
-		const _chat = chat.chat;
-		console.log('download', chat);
-
-		const blob = await downloadChatAsPDF(_chat);
-
-		// Create a URL for the blob
-		const url = window.URL.createObjectURL(blob);
-
-		// Create a link element to trigger the download
-		const a = document.createElement('a');
-		a.href = url;
-		a.download = `chat-${_chat.title}.pdf`;
-
-		// Append the link to the body and click it programmatically
-		document.body.appendChild(a);
-		a.click();
-
-		// Remove the link from the body
-		document.body.removeChild(a);
-
-		// Revoke the URL to release memory
-		window.URL.revokeObjectURL(url);
-	};
+	
 
 	const downloadJSONExport = async () => {
 		let blob = new Blob([JSON.stringify([chat])], {
@@ -187,14 +161,6 @@
 						<div class="flex items-center line-clamp-1">{$i18n.t('Plain text (.txt)')}</div>
 					</DropdownMenu.Item>
 
-					<DropdownMenu.Item
-						class="flex gap-2 items-center px-3 py-2 text-sm  cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md"
-						on:click={() => {
-							downloadPdf();
-						}}
-					>
-						<div class="flex items-center line-clamp-1">{$i18n.t('PDF document (.pdf)')}</div>
-					</DropdownMenu.Item>
 				</DropdownMenu.SubContent>
 			</DropdownMenu.Sub>
 

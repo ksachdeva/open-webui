@@ -6,8 +6,7 @@
 
 	const dispatch = createEventDispatcher();
 
-	import {
-		archiveChatById,
+	import {		
 		cloneChatById,
 		deleteChatById,
 		getChatList,
@@ -17,10 +16,8 @@
 	import { chatId, chats, mobile, pinnedChats, showSidebar, currentChatPage } from '$lib/stores';
 
 	import ChatMenu from './ChatMenu.svelte';
-	import ShareChatModal from '$lib/components/chat/ShareChatModal.svelte';
-	import GarbageBin from '$lib/components/icons/GarbageBin.svelte';
-	import Tooltip from '$lib/components/common/Tooltip.svelte';
-	import ArchiveBox from '$lib/components/icons/ArchiveBox.svelte';
+	import ShareChatModal from '$lib/components/chat/ShareChatModal.svelte';	
+	import Tooltip from '$lib/components/common/Tooltip.svelte';	
 
 	export let chat;
 	export let selected = false;
@@ -61,14 +58,7 @@
 			await pinnedChats.set(await getChatListByTagName(localStorage.token, 'pinned'));
 		}
 	};
-
-	const archiveChatHandler = async (id) => {
-		await archiveChatById(localStorage.token, id);
-
-		currentChatPage.set(1);
-		await chats.set(await getChatList(localStorage.token, $currentChatPage));
-		await pinnedChats.set(await getChatListByTagName(localStorage.token, 'pinned'));
-	};
+	
 
 	const focusEdit = async (node: HTMLInputElement) => {
 		node.focus();
@@ -193,32 +183,7 @@
 					</button>
 				</Tooltip>
 			</div>
-		{:else if shiftKey && mouseOver}
-			<div class=" flex items-center self-center space-x-1.5">
-				<Tooltip content={$i18n.t('Archive')} className="flex items-center">
-					<button
-						class=" self-center dark:hover:text-white transition"
-						on:click={() => {
-							archiveChatHandler(chat.id);
-						}}
-						type="button"
-					>
-						<ArchiveBox className="size-4  translate-y-[0.5px]" strokeWidth="2" />
-					</button>
-				</Tooltip>
-
-				<Tooltip content={$i18n.t('Delete')}>
-					<button
-						class=" self-center dark:hover:text-white transition"
-						on:click={() => {
-							dispatch('delete', 'shift');
-						}}
-						type="button"
-					>
-						<GarbageBin strokeWidth="2" />
-					</button>
-				</Tooltip>
-			</div>
+		
 		{:else}
 			<div class="flex self-center space-x-1 z-10">
 				<ChatMenu
@@ -228,10 +193,7 @@
 					}}
 					shareHandler={() => {
 						showShareChatModal = true;
-					}}
-					archiveChatHandler={() => {
-						archiveChatHandler(chat.id);
-					}}
+					}}					
 					renameHandler={() => {
 						chatTitle = chat.title;
 

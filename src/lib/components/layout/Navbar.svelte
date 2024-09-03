@@ -1,28 +1,20 @@
 <script lang="ts">
 	import { getContext } from 'svelte';
-	import { toast } from 'svelte-sonner';
 
 	import {
 		WEBUI_NAME,
-		chatId,
-		mobile,
-		settings,
-		showArchivedChats,
-		showSettings,
+		chatId,		
 		showSidebar,
 		user
 	} from '$lib/stores';
-
-	import { slide } from 'svelte/transition';
+	
 	import ShareChatModal from '../chat/ShareChatModal.svelte';
 	import ModelSelector from '../chat/ModelSelector.svelte';
 	import Tooltip from '../common/Tooltip.svelte';
-	import Menu from './Navbar/Menu.svelte';
-	import { page } from '$app/stores';
+	import Menu from './Navbar/Menu.svelte';	
 	import UserMenu from './Sidebar/UserMenu.svelte';
 	import MenuLines from '../icons/MenuLines.svelte';
-	import AdjustmentsHorizontal from '../icons/AdjustmentsHorizontal.svelte';
-
+	
 	const i18n = getContext('i18n');
 
 	export let initNewChat: Function;
@@ -32,8 +24,7 @@
 	export let chat;
 	export let selectedModels;
 
-	export let showModelSelector = true;
-	export let showControls = false;
+	export let showModelSelector = true;	
 
 	let showShareChatModal = false;
 	let showDownloadChatModal = false;
@@ -103,20 +94,7 @@
 							</div>
 						</button>
 					</Menu>
-				{/if}
-
-				<Tooltip content={$i18n.t('Controls')}>
-					<button
-						class=" flex cursor-pointer px-2 py-2 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-850 transition"
-						on:click={() => {
-							showControls = !showControls;
-						}}
-					>
-						<div class=" m-auto self-center">
-							<AdjustmentsHorizontal className=" size-5" strokeWidth="0.5" />
-						</div>
-					</button>
-				</Tooltip>
+				{/if}				
 
 				<Tooltip content={$i18n.t('New Chat')}>
 					<button
@@ -151,9 +129,7 @@
 						className="max-w-[200px]"
 						role={$user.role}
 						on:show={(e) => {
-							if (e.detail === 'archived-chat') {
-								showArchivedChats.set(true);
-							}
+							
 						}}
 					>
 						<button

@@ -3,8 +3,7 @@
 	const dispatch = createEventDispatcher();
 	const i18n = getContext('i18n');
 
-	import XMark from '$lib/components/icons/XMark.svelte';
-	import AdvancedParams from '../Settings/Advanced/AdvancedParams.svelte';
+	import XMark from '$lib/components/icons/XMark.svelte';	
 	
 	import FileItem from '$lib/components/common/FileItem.svelte';
 	import Collapsible from '$lib/components/common/Collapsible.svelte';
@@ -68,13 +67,6 @@
 		</Collapsible>
 
 		<hr class="my-2 border-gray-100 dark:border-gray-800" />
-
-		<Collapsible title={$i18n.t('Advanced Params')} open={true}>
-			<div class="text-sm mt-1.5" slot="content">
-				<div>
-					<AdvancedParams admin={$user?.role === 'admin'} bind:params />
-				</div>
-			</div>
-		</Collapsible>
+		
 	</div>
 </div>

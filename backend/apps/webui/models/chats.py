@@ -27,7 +27,6 @@ class Chat(Base):
     updated_at = Column(BigInteger)
 
     share_id = Column(Text, unique=True, nullable=True)
-    archived = Column(Boolean, default=False)
 
 
 class ChatModel(BaseModel):
@@ -42,7 +41,6 @@ class ChatModel(BaseModel):
     updated_at: int  # timestamp in epoch
 
     share_id: Optional[str] = None
-    archived: bool = False
 
 
 ####################
@@ -66,7 +64,6 @@ class ChatResponse(BaseModel):
     updated_at: int  # timestamp in epoch
     created_at: int  # timestamp in epoch
     share_id: Optional[str] = None  # id of the chat to be shared
-    archived: bool
 
 
 class ChatTitleIdResponse(BaseModel):
@@ -197,7 +194,6 @@ class ChatTable:
             with get_db() as db:
 
                 chat = db.get(Chat, id)
-                chat.archived = not chat.archived
                 db.commit()
                 db.refresh(chat)
                 return ChatModel.model_validate(chat)
@@ -248,14 +244,11 @@ class ChatTable:
     def get_chat_title_id_list_by_user_id(
         self,
         user_id: str,
-        include_archived: bool = False,
         skip: Optional[int] = None,
         limit: Optional[int] = None,
     ) -> list[ChatTitleIdResponse]:
         with get_db() as db:
             query = db.query(Chat).filter_by(user_id=user_id)
-            if not include_archived:
-                query = query.filter_by(archived=False)
 
             query = query.order_by(Chat.updated_at.desc()).with_entities(
                 Chat.id, Chat.title, Chat.updated_at, Chat.created_at
@@ -288,7 +281,6 @@ class ChatTable:
             all_chats = (
                 db.query(Chat)
                 .filter(Chat.id.in_(chat_ids))
-                .filter_by(archived=False)
                 .order_by(Chat.updated_at.desc())
                 .all()
             )

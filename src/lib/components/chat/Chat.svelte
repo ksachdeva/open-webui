@@ -59,8 +59,7 @@
 	import Banner from '../common/Banner.svelte';
 	import MessageInput from '$lib/components/chat/MessageInput.svelte';
 	import Messages from '$lib/components/chat/Messages.svelte';
-	import Navbar from '$lib/components/layout/Navbar.svelte';
-	import ChatControls from './ChatControls.svelte';
+	import Navbar from '$lib/components/layout/Navbar.svelte';	
 	import EventConfirmDialog from '../common/ConfirmDialog.svelte';
 
 	const i18n: Writable<i18nType> = getContext('i18n');
@@ -1380,21 +1379,4 @@
 	</div>
 {/if}
 
-<ChatControls
-	models={selectedModelIds.reduce((a, e, i, arr) => {
-		const model = $models.find((m) => m.id === e);
-		if (model) {
-			return [...a, model];
-		}
-		return a;
-	}, [])}
-	bind:show={showControls}
-	bind:chatFiles
-	bind:params
-	bind:files
-	{submitPrompt}
-	{stopResponse}
-	modelId={selectedModelIds?.at(0) ?? null}
-	chatId={$chatId}
-	{eventTarget}
-/>
+

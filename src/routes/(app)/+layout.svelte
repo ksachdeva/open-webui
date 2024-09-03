@@ -20,12 +20,8 @@
 		settings,
 		models,		
 		tags,
-		banners,
-		showChangelog,
-		config,
-		showCallOverlay,
-		tools,
-		functions,
+		banners,		
+		config,		
 		temporaryChatEnabled
 	} from '$lib/stores';
 
@@ -163,11 +159,7 @@
 					console.log('showShortcuts');
 					document.getElementById('show-shortcuts-button')?.click();
 				}
-			});
-
-			if ($user.role === 'admin') {
-				showChangelog.set(localStorage.version !== $config.version);
-			}
+			});			
 
 			if ($page.url.searchParams.get('temporary-chat') === 'true') {
 				temporaryChatEnabled.set(true);
