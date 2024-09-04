@@ -1,4 +1,3 @@
-import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
@@ -7,13 +6,6 @@ from sqlalchemy import pool
 from alembic import context
 
 from apps.webui.models.auths import Auth
-from apps.webui.models.chats import Chat
-
-
-from apps.webui.models.models import Model
-
-from apps.webui.models.tags import Tag, ChatIdTag
-from apps.webui.models.users import User
 
 
 from env import DATABASE_URL

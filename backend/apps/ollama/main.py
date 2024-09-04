@@ -17,7 +17,6 @@ from typing import Optional, Union
 
 from starlette.background import BackgroundTask
 
-from apps.webui.models.models import Models
 from constants import ERROR_MESSAGES
 from utils.utils import get_verified_user
 
@@ -28,11 +27,6 @@ from config import (
     AIOHTTP_CLIENT_TIMEOUT,
     AppConfig,
     CORS_ALLOW_ORIGIN,
-)
-from utils.misc import (
-    apply_model_params_to_body_ollama,
-    apply_model_params_to_body_openai,
-    apply_model_system_prompt_to_body,
 )
 
 log = logging.getLogger(__name__)
@@ -391,23 +385,6 @@ async def generate_chat_completion(
 
     model_id = form_data.model
 
-    model_info = Models.get_model_by_id(model_id)
-
-    if model_info:
-        if model_info.base_model_id:
-            payload["model"] = model_info.base_model_id
-
-        params = model_info.params.model_dump()
-
-        if params:
-            if payload.get("options") is None:
-                payload["options"] = {}
-
-            payload["options"] = apply_model_params_to_body_ollama(
-                params, payload["options"]
-            )
-            payload = apply_model_system_prompt_to_body(params, payload, user)
-
     if ":" not in payload["model"]:
         payload["model"] = f"{payload['model']}:latest"
 
@@ -460,18 +437,6 @@ async def generate_openai_chat_completion(
                 status_code=403,
                 detail="Model not found",
             )
-
-    model_info = Models.get_model_by_id(model_id)
-
-    if model_info:
-        if model_info.base_model_id:
-            payload["model"] = model_info.base_model_id
-
-        params = model_info.params.model_dump()
-
-        if params:
-            payload = apply_model_params_to_body_openai(params, payload)
-            payload = apply_model_system_prompt_to_body(params, payload, user)
 
     if ":" not in payload["model"]:
         payload["model"] = f"{payload['model']}:latest"
