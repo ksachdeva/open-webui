@@ -392,10 +392,7 @@ async def get_app_config(request: Request):
             "enable_login_form": webui_app.state.config.ENABLE_LOGIN_FORM,
             **(
                 {
-                    "enable_image_generation": False,
-                    "enable_community_sharing": webui_app.state.config.ENABLE_COMMUNITY_SHARING,
                     "enable_message_rating": webui_app.state.config.ENABLE_MESSAGE_RATING,
-                    "enable_admin_export": ENABLE_ADMIN_EXPORT,
                     "enable_admin_chat_access": ENABLE_ADMIN_CHAT_ACCESS,
                 }
                 if user is not None

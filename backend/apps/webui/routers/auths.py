@@ -1,6 +1,4 @@
-import logging
-
-from fastapi import Request, UploadFile, File
+from fastapi import Request
 from fastapi import Depends, HTTPException, status
 from fastapi.responses import Response
 
@@ -8,7 +6,6 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 import re
 import uuid
-import csv
 
 from apps.webui.models.auths import (
     SigninForm,
@@ -342,7 +339,6 @@ async def get_admin_config(request: Request, user=Depends(get_admin_user)):
         "ENABLE_SIGNUP": request.app.state.config.ENABLE_SIGNUP,
         "DEFAULT_USER_ROLE": request.app.state.config.DEFAULT_USER_ROLE,
         "JWT_EXPIRES_IN": request.app.state.config.JWT_EXPIRES_IN,
-        "ENABLE_COMMUNITY_SHARING": request.app.state.config.ENABLE_COMMUNITY_SHARING,
         "ENABLE_MESSAGE_RATING": request.app.state.config.ENABLE_MESSAGE_RATING,
     }
 
@@ -352,7 +348,6 @@ class AdminConfig(BaseModel):
     ENABLE_SIGNUP: bool
     DEFAULT_USER_ROLE: str
     JWT_EXPIRES_IN: str
-    ENABLE_COMMUNITY_SHARING: bool
     ENABLE_MESSAGE_RATING: bool
 
 
@@ -372,9 +367,6 @@ async def update_admin_config(
     if re.match(pattern, form_data.JWT_EXPIRES_IN):
         request.app.state.config.JWT_EXPIRES_IN = form_data.JWT_EXPIRES_IN
 
-    request.app.state.config.ENABLE_COMMUNITY_SHARING = (
-        form_data.ENABLE_COMMUNITY_SHARING
-    )
     request.app.state.config.ENABLE_MESSAGE_RATING = form_data.ENABLE_MESSAGE_RATING
 
     return {
@@ -382,7 +374,6 @@ async def update_admin_config(
         "ENABLE_SIGNUP": request.app.state.config.ENABLE_SIGNUP,
         "DEFAULT_USER_ROLE": request.app.state.config.DEFAULT_USER_ROLE,
         "JWT_EXPIRES_IN": request.app.state.config.JWT_EXPIRES_IN,
-        "ENABLE_COMMUNITY_SHARING": request.app.state.config.ENABLE_COMMUNITY_SHARING,
         "ENABLE_MESSAGE_RATING": request.app.state.config.ENABLE_MESSAGE_RATING,
     }
 
