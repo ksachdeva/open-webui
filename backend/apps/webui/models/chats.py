@@ -1,11 +1,11 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Union, Optional
+from typing import Optional
 
 import json
 import uuid
 import time
 
-from sqlalchemy import Column, String, BigInteger, Boolean, Text
+from sqlalchemy import Column, String, BigInteger, Text
 
 from apps.webui.internal.db import Base, get_db
 

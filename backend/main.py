@@ -57,7 +57,6 @@ from config import (
     CACHE_DIR,
     STATIC_DIR,
     DEFAULT_LOCALE,
-    ENABLE_OLLAMA_API,
     GLOBAL_LOG_LEVEL,
     SRC_LOG_LEVELS,
     ENABLE_ADMIN_EXPORT,
@@ -125,7 +124,6 @@ app = FastAPI(
 app.state.config = AppConfig()
 
 
-app.state.config.ENABLE_OLLAMA_API = ENABLE_OLLAMA_API
 app.state.MODELS = {}
 
 
@@ -307,19 +305,18 @@ async def get_all_models():
     # TODO: Optimize this function
     ollama_models = []
 
-    if app.state.config.ENABLE_OLLAMA_API:
-        ollama_models = await get_ollama_models()
-        ollama_models = [
-            {
-                "id": model["model"],
-                "name": model["name"],
-                "object": "model",
-                "created": int(time.time()),
-                "owned_by": "ollama",
-                "ollama": model,
-            }
-            for model in ollama_models["models"]
-        ]
+    ollama_models = await get_ollama_models()
+    ollama_models = [
+        {
+            "id": model["model"],
+            "name": model["name"],
+            "object": "model",
+            "created": int(time.time()),
+            "owned_by": "ollama",
+            "ollama": model,
+        }
+        for model in ollama_models["models"]
+    ]
 
     models = ollama_models
 
@@ -380,14 +377,6 @@ async def get_all_models():
 @app.get("/api/models")
 async def get_models(user=Depends(get_verified_user)):
     models = await get_all_models()
-
-    # Filter out filter pipelines
-    models = [
-        model
-        for model in models
-        if "pipeline" not in model or model["pipeline"].get("type", None) != "filter"
-    ]
-
     return {"data": models}
 
 
@@ -400,13 +389,6 @@ async def generate_chat_completions(form_data: dict, user=Depends(get_verified_u
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Model not found",
         )
-
-    if app.state.config.ENABLE_MODEL_FILTER:
-        if user.role == "user" and model_id not in app.state.config.MODEL_FILTER_LIST:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Model not found",
-            )
 
     model = app.state.MODELS[model_id]
     if model["owned_by"] == "ollama":

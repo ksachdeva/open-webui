@@ -12,8 +12,6 @@ from typing import Optional
 
 from pathlib import Path
 import json
-import yaml
-
 import requests
 import shutil
 
@@ -341,12 +339,6 @@ Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
 # OLLAMA_BASE_URL
 ####################################
 
-
-ENABLE_OLLAMA_API = PersistentConfig(
-    "ENABLE_OLLAMA_API",
-    "ollama.enable",
-    os.environ.get("ENABLE_OLLAMA_API", "True").lower() == "true",
-)
 
 OLLAMA_API_BASE_URL = os.environ.get(
     "OLLAMA_API_BASE_URL", "http://localhost:11434/api"

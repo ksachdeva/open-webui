@@ -1,17 +1,10 @@
-from fastapi import (
-    FastAPI,
-    Request,
-    HTTPException,
-    Depends,
-    UploadFile,
-    File,
-)
+from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
 from pydantic import BaseModel, ConfigDict
 
-import os
+
 import re
 import random
 import requests
@@ -20,29 +13,23 @@ import aiohttp
 import asyncio
 import logging
 import time
-from urllib.parse import urlparse
 from typing import Optional, Union
 
 from starlette.background import BackgroundTask
 
 from apps.webui.models.models import Models
 from constants import ERROR_MESSAGES
-from utils.utils import (
-    get_verified_user,
-    get_admin_user,
-)
+from utils.utils import get_verified_user
 
 
 from config import (
     SRC_LOG_LEVELS,
     OLLAMA_BASE_URLS,
-    ENABLE_OLLAMA_API,
     AIOHTTP_CLIENT_TIMEOUT,
     AppConfig,
     CORS_ALLOW_ORIGIN,
 )
 from utils.misc import (
-    calculate_sha256,
     apply_model_params_to_body_ollama,
     apply_model_params_to_body_openai,
     apply_model_system_prompt_to_body,
@@ -61,8 +48,6 @@ app.add_middleware(
 )
 
 app.state.config = AppConfig()
-
-app.state.config.ENABLE_OLLAMA_API = ENABLE_OLLAMA_API
 app.state.config.OLLAMA_BASE_URLS = OLLAMA_BASE_URLS
 app.state.MODELS = {}
 
@@ -87,38 +72,6 @@ async def check_url(request: Request, call_next):
 @app.get("/")
 async def get_status():
     return {"status": True}
-
-
-@app.get("/config")
-async def get_config(user=Depends(get_admin_user)):
-    return {"ENABLE_OLLAMA_API": app.state.config.ENABLE_OLLAMA_API}
-
-
-class OllamaConfigForm(BaseModel):
-    enable_ollama_api: Optional[bool] = None
-
-
-@app.post("/config/update")
-async def update_config(form_data: OllamaConfigForm, user=Depends(get_admin_user)):
-    app.state.config.ENABLE_OLLAMA_API = form_data.enable_ollama_api
-    return {"ENABLE_OLLAMA_API": app.state.config.ENABLE_OLLAMA_API}
-
-
-@app.get("/urls")
-async def get_ollama_api_urls(user=Depends(get_admin_user)):
-    return {"OLLAMA_BASE_URLS": app.state.config.OLLAMA_BASE_URLS}
-
-
-class UrlUpdateForm(BaseModel):
-    urls: list[str]
-
-
-@app.post("/urls/update")
-async def update_ollama_api_url(form_data: UrlUpdateForm, user=Depends(get_admin_user)):
-    app.state.config.OLLAMA_BASE_URLS = form_data.urls
-
-    log.info(f"app.state.config.OLLAMA_BASE_URLS: {app.state.config.OLLAMA_BASE_URLS}")
-    return {"OLLAMA_BASE_URLS": app.state.config.OLLAMA_BASE_URLS}
 
 
 async def fetch_url(url):
@@ -210,22 +163,14 @@ def merge_models_lists(model_lists):
 async def get_all_models():
     log.info("get_all_models()")
 
-    if app.state.config.ENABLE_OLLAMA_API:
-        tasks = [
-            fetch_url(f"{url}/api/tags") for url in app.state.config.OLLAMA_BASE_URLS
-        ]
-        responses = await asyncio.gather(*tasks)
+    tasks = [fetch_url(f"{url}/api/tags") for url in app.state.config.OLLAMA_BASE_URLS]
+    responses = await asyncio.gather(*tasks)
 
-        models = {
-            "models": merge_models_lists(
-                map(
-                    lambda response: response["models"] if response else None, responses
-                )
-            )
-        }
-
-    else:
-        models = {"models": []}
+    models = {
+        "models": merge_models_lists(
+            map(lambda response: response["models"] if response else None, responses)
+        )
+    }
 
     app.state.MODELS = {model["model"]: model for model in models["models"]}
 
@@ -239,17 +184,6 @@ async def get_ollama_tags(
 ):
     if url_idx is None:
         models = await get_all_models()
-
-        if app.state.config.ENABLE_MODEL_FILTER:
-            if user.role == "user":
-                models["models"] = list(
-                    filter(
-                        lambda model: model["name"]
-                        in app.state.config.MODEL_FILTER_LIST,
-                        models["models"],
-                    )
-                )
-                return models
         return models
     else:
         url = app.state.config.OLLAMA_BASE_URLS[url_idx]
@@ -280,56 +214,53 @@ async def get_ollama_tags(
 @app.get("/api/version")
 @app.get("/api/version/{url_idx}")
 async def get_ollama_versions(url_idx: Optional[int] = None):
-    if app.state.config.ENABLE_OLLAMA_API:
-        if url_idx is None:
-            # returns lowest version
-            tasks = [
-                fetch_url(f"{url}/api/version")
-                for url in app.state.config.OLLAMA_BASE_URLS
-            ]
-            responses = await asyncio.gather(*tasks)
-            responses = list(filter(lambda x: x is not None, responses))
 
-            if len(responses) > 0:
-                lowest_version = min(
-                    responses,
-                    key=lambda x: tuple(
-                        map(int, re.sub(r"^v|-.*", "", x["version"]).split("."))
-                    ),
-                )
+    if url_idx is None:
+        # returns lowest version
+        tasks = [
+            fetch_url(f"{url}/api/version") for url in app.state.config.OLLAMA_BASE_URLS
+        ]
+        responses = await asyncio.gather(*tasks)
+        responses = list(filter(lambda x: x is not None, responses))
 
-                return {"version": lowest_version["version"]}
-            else:
-                raise HTTPException(
-                    status_code=500,
-                    detail=ERROR_MESSAGES.OLLAMA_NOT_FOUND,
-                )
+        if len(responses) > 0:
+            lowest_version = min(
+                responses,
+                key=lambda x: tuple(
+                    map(int, re.sub(r"^v|-.*", "", x["version"]).split("."))
+                ),
+            )
+
+            return {"version": lowest_version["version"]}
         else:
-            url = app.state.config.OLLAMA_BASE_URLS[url_idx]
-
-            r = None
-            try:
-                r = requests.request(method="GET", url=f"{url}/api/version")
-                r.raise_for_status()
-
-                return r.json()
-            except Exception as e:
-                log.exception(e)
-                error_detail = "Open WebUI: Server Connection Error"
-                if r is not None:
-                    try:
-                        res = r.json()
-                        if "error" in res:
-                            error_detail = f"Ollama: {res['error']}"
-                    except Exception:
-                        error_detail = f"Ollama: {e}"
-
-                raise HTTPException(
-                    status_code=r.status_code if r else 500,
-                    detail=error_detail,
-                )
+            raise HTTPException(
+                status_code=500,
+                detail=ERROR_MESSAGES.OLLAMA_NOT_FOUND,
+            )
     else:
-        return {"version": False}
+        url = app.state.config.OLLAMA_BASE_URLS[url_idx]
+
+        r = None
+        try:
+            r = requests.request(method="GET", url=f"{url}/api/version")
+            r.raise_for_status()
+
+            return r.json()
+        except Exception as e:
+            log.exception(e)
+            error_detail = "Open WebUI: Server Connection Error"
+            if r is not None:
+                try:
+                    res = r.json()
+                    if "error" in res:
+                        error_detail = f"Ollama: {res['error']}"
+                except Exception:
+                    error_detail = f"Ollama: {e}"
+
+            raise HTTPException(
+                status_code=r.status_code if r else 500,
+                detail=error_detail,
+            )
 
 
 class ModelNameForm(BaseModel):
@@ -373,118 +304,6 @@ async def show_model_info(form_data: ModelNameForm, user=Depends(get_verified_us
             status_code=r.status_code if r else 500,
             detail=error_detail,
         )
-
-
-class GenerateEmbeddingsForm(BaseModel):
-    model: str
-    prompt: str
-    options: Optional[dict] = None
-    keep_alive: Optional[Union[int, str]] = None
-
-
-@app.post("/api/embeddings")
-@app.post("/api/embeddings/{url_idx}")
-async def generate_embeddings(
-    form_data: GenerateEmbeddingsForm,
-    url_idx: Optional[int] = None,
-    user=Depends(get_verified_user),
-):
-    if url_idx is None:
-        model = form_data.model
-
-        if ":" not in model:
-            model = f"{model}:latest"
-
-        if model in app.state.MODELS:
-            url_idx = random.choice(app.state.MODELS[model]["urls"])
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail=ERROR_MESSAGES.MODEL_NOT_FOUND(form_data.model),
-            )
-
-    url = app.state.config.OLLAMA_BASE_URLS[url_idx]
-    log.info(f"url: {url}")
-
-    r = requests.request(
-        method="POST",
-        url=f"{url}/api/embeddings",
-        headers={"Content-Type": "application/json"},
-        data=form_data.model_dump_json(exclude_none=True).encode(),
-    )
-    try:
-        r.raise_for_status()
-
-        return r.json()
-    except Exception as e:
-        log.exception(e)
-        error_detail = "Open WebUI: Server Connection Error"
-        if r is not None:
-            try:
-                res = r.json()
-                if "error" in res:
-                    error_detail = f"Ollama: {res['error']}"
-            except Exception:
-                error_detail = f"Ollama: {e}"
-
-        raise HTTPException(
-            status_code=r.status_code if r else 500,
-            detail=error_detail,
-        )
-
-
-def generate_ollama_embeddings(
-    form_data: GenerateEmbeddingsForm,
-    url_idx: Optional[int] = None,
-):
-    log.info(f"generate_ollama_embeddings {form_data}")
-
-    if url_idx is None:
-        model = form_data.model
-
-        if ":" not in model:
-            model = f"{model}:latest"
-
-        if model in app.state.MODELS:
-            url_idx = random.choice(app.state.MODELS[model]["urls"])
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail=ERROR_MESSAGES.MODEL_NOT_FOUND(form_data.model),
-            )
-
-    url = app.state.config.OLLAMA_BASE_URLS[url_idx]
-    log.info(f"url: {url}")
-
-    r = requests.request(
-        method="POST",
-        url=f"{url}/api/embeddings",
-        headers={"Content-Type": "application/json"},
-        data=form_data.model_dump_json(exclude_none=True).encode(),
-    )
-    try:
-        r.raise_for_status()
-
-        data = r.json()
-
-        log.info(f"generate_ollama_embeddings {data}")
-
-        if "embedding" in data:
-            return data["embedding"]
-        else:
-            raise Exception("Something went wrong :/")
-    except Exception as e:
-        log.exception(e)
-        error_detail = "Open WebUI: Server Connection Error"
-        if r is not None:
-            try:
-                res = r.json()
-                if "error" in res:
-                    error_detail = f"Ollama: {res['error']}"
-            except Exception:
-                error_detail = f"Ollama: {e}"
-
-        raise Exception(error_detail)
 
 
 class GenerateCompletionForm(BaseModel):
@@ -735,11 +554,3 @@ async def get_openai_models(
                 status_code=r.status_code if r else 500,
                 detail=error_detail,
             )
-
-
-class UrlForm(BaseModel):
-    url: str
-
-
-class UploadBlobForm(BaseModel):
-    filename: str
