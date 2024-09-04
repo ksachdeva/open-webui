@@ -1,7 +1,6 @@
 <script lang="ts">	
 	import { createEventDispatcher, onMount, getContext } from 'svelte';
 	import { getLanguages } from '$lib/i18n';
-	const dispatch = createEventDispatcher();
 
 	import { theme } from '$lib/stores';
 
@@ -111,15 +110,5 @@
 		<hr class=" dark:border-gray-850 my-3" />
 		
 	</div>
-
-	<div class="flex justify-end pt-3 text-sm font-medium">
-		<button
-			class="  px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-gray-100 transition rounded-lg"
-			on:click={() => {				
-				dispatch('save');
-			}}
-		>
-			{$i18n.t('Save')}
-		</button>
-	</div>
+	
 </div>

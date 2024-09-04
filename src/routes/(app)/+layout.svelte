@@ -20,8 +20,7 @@
 		settings,
 		models,		
 		tags,
-		banners,		
-		config,		
+		banners,				
 		temporaryChatEnabled
 	} from '$lib/stores';
 
