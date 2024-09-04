@@ -42,14 +42,7 @@ else:
 log = logging.getLogger(__name__)
 log.info(f"GLOBAL_LOG_LEVEL: {GLOBAL_LOG_LEVEL}")
 
-log_sources = [
-    "CONFIG",
-    "DB",
-    "IMAGES",
-    "MAIN",
-    "MODELS",
-    "OLLAMA",
-]
+log_sources = ["CONFIG", "DB", "MAIN", "OLLAMA", "MODELS"]
 
 SRC_LOG_LEVELS = {}
 
