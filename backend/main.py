@@ -319,54 +319,6 @@ async def get_all_models():
 
     models = ollama_models
 
-    # custom_models = Models.get_all_models()
-    # for custom_model in custom_models:
-    #     if custom_model.base_model_id is None:
-    #         for model in models:
-    #             if (
-    #                 custom_model.id == model["id"]
-    #                 or custom_model.id == model["id"].split(":")[0]
-    #             ):
-    #                 model["name"] = custom_model.name
-    #                 model["info"] = custom_model.model_dump()
-
-    #                 action_ids = []
-    #                 if "info" in model and "meta" in model["info"]:
-    #                     action_ids.extend(model["info"]["meta"].get("actionIds", []))
-
-    #                 model["action_ids"] = action_ids
-    #     else:
-    #         owned_by = "openai"
-    #         pipe = None
-    #         action_ids = []
-
-    #         for model in models:
-    #             if (
-    #                 custom_model.base_model_id == model["id"]
-    #                 or custom_model.base_model_id == model["id"].split(":")[0]
-    #             ):
-    #                 owned_by = model["owned_by"]
-    #                 if "pipe" in model:
-    #                     pipe = model["pipe"]
-
-    #                 if "info" in model and "meta" in model["info"]:
-    #                     action_ids.extend(model["info"]["meta"].get("actionIds", []))
-    #                 break
-
-    #         models.append(
-    #             {
-    #                 "id": custom_model.id,
-    #                 "name": custom_model.name,
-    #                 "object": "model",
-    #                 "created": custom_model.created_at,
-    #                 "owned_by": owned_by,
-    #                 "info": custom_model.model_dump(),
-    #                 "preset": True,
-    #                 **({"pipe": pipe} if pipe is not None else {}),
-    #                 "action_ids": action_ids,
-    #             }
-    #         )
-
     app.state.MODELS = {model["id"]: model for model in models}
     webui_app.state.MODELS = app.state.MODELS
 
