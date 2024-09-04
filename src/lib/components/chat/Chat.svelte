@@ -42,8 +42,6 @@
 		getTagsById,
 		updateChatById
 	} from '$lib/apis/chats';
-		
-	import { createOpenAITextStream } from '$lib/apis/streaming';
 	
 	import { getAndUpdateUserLocation, getUserSettings } from '$lib/apis/users';
 	import {
@@ -1159,52 +1157,7 @@
 			}
 		}
 	};
-	const mergeResponses = async (messageId, responses, _chatId) => {
-		console.log('mergeResponses', messageId, responses);
-		const message = history.messages[messageId];
-		const mergedResponse = {
-			status: true,
-			content: ''
-		};
-		message.merged = mergedResponse;
-		messages = messages;
-
-		try {
-			const [res, controller] = await generateMoACompletion(
-				localStorage.token,
-				message.model,
-				history.messages[message.parentId].content,
-				responses
-			);
-
-			if (res && res.ok && res.body) {
-				const textStream = await createOpenAITextStream(res.body, $settings.splitLargeChunks);
-				for await (const update of textStream) {
-					const { value, done, citations, error, usage } = update;
-					if (error || done) {
-						break;
-					}
-
-					if (mergedResponse.content == '' && value == '\n') {
-						continue;
-					} else {
-						mergedResponse.content += value;
-						messages = messages;
-					}
-
-					if (autoScroll) {
-						scrollToBottom();
-					}
-				}
-
-				await saveChatHandler(_chatId);
-			} else {
-				console.error(res);
-			}
-		} catch (e) {
-			console.error(e);
-		}
-	};
+	
 </script>
 
 <svelte:head>
@@ -1319,7 +1272,6 @@
 						{sendPrompt}
 						{continueGeneration}
 						{regenerateResponse}
-						{mergeResponses}
 						{chatActionHandler}
 					/>
 				</div>

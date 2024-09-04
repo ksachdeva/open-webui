@@ -58,8 +58,6 @@ from config import (
     STATIC_DIR,
     DEFAULT_LOCALE,
     ENABLE_OLLAMA_API,
-    ENABLE_MODEL_FILTER,
-    MODEL_FILTER_LIST,
     GLOBAL_LOG_LEVEL,
     SRC_LOG_LEVELS,
     ENABLE_ADMIN_EXPORT,
@@ -128,11 +126,6 @@ app.state.config = AppConfig()
 
 
 app.state.config.ENABLE_OLLAMA_API = ENABLE_OLLAMA_API
-
-app.state.config.ENABLE_MODEL_FILTER = ENABLE_MODEL_FILTER
-app.state.config.MODEL_FILTER_LIST = MODEL_FILTER_LIST
-
-
 app.state.MODELS = {}
 
 
@@ -394,16 +387,6 @@ async def get_models(user=Depends(get_verified_user)):
         for model in models
         if "pipeline" not in model or model["pipeline"].get("type", None) != "filter"
     ]
-
-    if app.state.config.ENABLE_MODEL_FILTER:
-        if user.role == "user":
-            models = list(
-                filter(
-                    lambda model: model["id"] in app.state.config.MODEL_FILTER_LIST,
-                    models,
-                )
-            )
-            return {"data": models}
 
     return {"data": models}
 

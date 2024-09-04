@@ -1,6 +1,6 @@
 <script>
 	import { WEBUI_BASE_URL } from '$lib/constants';
-	import { WEBUI_NAME, config, user, showSidebar } from '$lib/stores';
+	import { config, user } from '$lib/stores';
 	import { goto } from '$app/navigation';
 	import { onMount, getContext } from 'svelte';
 
@@ -22,8 +22,7 @@
 
 	const i18n = getContext('i18n');
 
-	let loaded = false;
-	let tab = '';
+	let loaded = false;	
 	let users = [];
 
 	let search = '';
@@ -47,18 +46,7 @@
 			users = await getUsers(localStorage.token);
 		}
 	};
-
-	const editUserPasswordHandler = async (id, password) => {
-		const res = await deleteUserById(localStorage.token, id).catch((error) => {
-			toast.error(error);
-			return null;
-		});
-		if (res) {
-			users = await getUsers(localStorage.token);
-			toast.success($i18n.t('Successfully updated.'));
-		}
-	};
-
+	
 	const deleteUserHandler = async (id) => {
 		const res = await deleteUserById(localStorage.token, id).catch((error) => {
 			toast.error(error);
