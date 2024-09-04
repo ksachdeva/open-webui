@@ -4,9 +4,7 @@ import time
 import os
 import sys
 import logging
-import aiohttp
 import mimetypes
-from typing import Optional
 
 from fastapi import FastAPI, Request, Depends, status
 from fastapi.staticfiles import StaticFiles
@@ -16,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import StreamingResponse, Response
+from starlette.responses import StreamingResponse
 
 
 from apps.ollama.main import (
@@ -30,13 +28,10 @@ from apps.webui.main import app as webui_app
 from apps.webui.internal.db import Session
 
 
-from pydantic import BaseModel
-
 from apps.webui.models.users import Users
 
 
 from utils.utils import (
-    get_admin_user,
     get_verified_user,
     get_current_user,
     get_http_authorization_cred,
@@ -47,7 +42,6 @@ from utils.utils import (
 from config import (
     run_migrations,
     WEBUI_NAME,
-    WEBUI_URL,
     WEBUI_AUTH,
     ENV,
     VERSION,
@@ -57,21 +51,11 @@ from config import (
     DEFAULT_LOCALE,
     GLOBAL_LOG_LEVEL,
     SRC_LOG_LEVELS,
-    ENABLE_ADMIN_EXPORT,
     WEBUI_BUILD_HASH,
-    SAFE_MODE,
-    WEBUI_SECRET_KEY,
-    WEBUI_SESSION_COOKIE_SAME_SITE,
-    WEBUI_SESSION_COOKIE_SECURE,
     ENABLE_ADMIN_CHAT_ACCESS,
     AppConfig,
     CORS_ALLOW_ORIGIN,
 )
-
-from constants import ERROR_MESSAGES
-
-if SAFE_MODE:
-    print("SAFE MODE ENABLED")
 
 
 logging.basicConfig(stream=sys.stdout, level=GLOBAL_LOG_LEVEL)
@@ -92,14 +76,6 @@ class SPAStaticFiles(StaticFiles):
 
 print(
     rf"""
-  ___                    __        __   _     _   _ ___ 
- / _ \ _ __   ___ _ __   \ \      / /__| |__ | | | |_ _|
-| | | | '_ \ / _ \ '_ \   \ \ /\ / / _ \ '_ \| | | || | 
-| |_| | |_) |  __/ | | |   \ V  V /  __/ |_) | |_| || | 
- \___/| .__/ \___|_| |_|    \_/\_/ \___|_.__/ \___/|___|
-      |_|                                               
-
-      
 v{VERSION} - building the best open-source AI user interface.
 {f"Commit: {WEBUI_BUILD_HASH}" if WEBUI_BUILD_HASH != "dev-build" else ""}
 https://github.com/open-webui/open-webui
@@ -130,21 +106,6 @@ app.state.MODELS = {}
 # ChatCompletion Middleware
 #
 ##################################
-
-
-async def get_content_from_response(response) -> Optional[str]:
-    content = None
-    if hasattr(response, "body_iterator"):
-        async for chunk in response.body_iterator:
-            data = json.loads(chunk.decode("utf-8"))
-            content = data["choices"][0]["message"]["content"]
-
-        # Cleanup any remaining background tasks if necessary
-        if response.background is not None:
-            await response.background()
-    else:
-        content = response["choices"][0]["message"]["content"]
-    return content
 
 
 def is_chat_completion_request(request):
@@ -271,8 +232,6 @@ async def commit_session_after_request(request: Request, call_next):
 async def check_url(request: Request, call_next):
     if len(app.state.MODELS) == 0:
         await get_all_models()
-    else:
-        pass
 
     start_time = int(time.time())
     response = await call_next(request)
@@ -397,60 +356,11 @@ async def get_app_config(request: Request):
     }
 
 
-@app.get("/api/config/model/filter")
-async def get_model_filter_config(user=Depends(get_admin_user)):
-    return {
-        "enabled": app.state.config.ENABLE_MODEL_FILTER,
-        "models": app.state.config.MODEL_FILTER_LIST,
-    }
-
-
-class ModelFilterConfigForm(BaseModel):
-    enabled: bool
-    models: list[str]
-
-
-@app.post("/api/config/model/filter")
-async def update_model_filter_config(
-    form_data: ModelFilterConfigForm, user=Depends(get_admin_user)
-):
-    app.state.config.ENABLE_MODEL_FILTER = form_data.enabled
-    app.state.config.MODEL_FILTER_LIST = form_data.models
-
-    return {
-        "enabled": app.state.config.ENABLE_MODEL_FILTER,
-        "models": app.state.config.MODEL_FILTER_LIST,
-    }
-
-
-class UrlForm(BaseModel):
-    url: str
-
-
 @app.get("/api/version")
 async def get_app_version():
     return {
         "version": VERSION,
     }
-
-
-@app.get("/api/version/updates")
-async def get_app_latest_release_version():
-    try:
-        async with aiohttp.ClientSession(trust_env=True) as session:
-            async with session.get(
-                "https://api.github.com/repos/open-webui/open-webui/releases/latest"
-            ) as response:
-                response.raise_for_status()
-                data = await response.json()
-                latest_version = data["tag_name"]
-
-                return {"current": VERSION, "latest": latest_version[1:]}
-    except aiohttp.ClientError:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=ERROR_MESSAGES.RATE_LIMIT_EXCEEDED,
-        )
 
 
 @app.get("/manifest.json")
@@ -477,21 +387,6 @@ async def get_manifest_json():
             },
         ],
     }
-
-
-@app.get("/opensearch.xml")
-async def get_opensearch_xml():
-    xml_content = rf"""
-    <OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/" xmlns:moz="http://www.mozilla.org/2006/browser/search/">
-    <ShortName>{WEBUI_NAME}</ShortName>
-    <Description>Search {WEBUI_NAME}</Description>
-    <InputEncoding>UTF-8</InputEncoding>
-    <Image width="16" height="16" type="image/x-icon">{WEBUI_URL}/static/favicon.png</Image>
-    <Url type="text/html" method="get" template="{WEBUI_URL}/?q={"{searchTerms}"}"/>
-    <moz:SearchForm>{WEBUI_URL}</moz:SearchForm>
-    </OpenSearchDescription>
-    """
-    return Response(content=xml_content, media_type="application/xml")
 
 
 @app.get("/health")
