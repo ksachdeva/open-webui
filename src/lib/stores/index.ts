@@ -1,6 +1,5 @@
 import { APP_NAME } from '$lib/constants';
 import { type Writable, writable } from 'svelte/store';
-import type {  ModelConfig } from '$lib/apis';
 import type { Banner } from '$lib/types';
 import type { Socket } from 'socket.io-client';
 
@@ -46,8 +45,7 @@ export type Model =  OllamaModel;
 
 type BaseModel = {
 	id: string;
-	name: string;
-	info?: ModelConfig;
+	name: string;	
 	owned_by: 'ollama';
 };
 

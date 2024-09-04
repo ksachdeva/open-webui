@@ -12,10 +12,8 @@
 
 	import { getOllamaVersion} from '$lib/apis/ollama';
 
-	import { user, MODEL_DOWNLOAD_POOL, models, mobile, temporaryChatEnabled } from '$lib/stores';
-	import { toast } from 'svelte-sonner';
-	import { capitalizeFirstLetter, sanitizeResponseContent, splitStream } from '$lib/utils';
-	import { getModels } from '$lib/apis';
+	import { mobile, temporaryChatEnabled } from '$lib/stores';	
+	import {  sanitizeResponseContent } from '$lib/utils';	
 
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
 	import Switch from '$lib/components/common/Switch.svelte';

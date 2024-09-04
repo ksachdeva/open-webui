@@ -3,7 +3,7 @@
 	import { getLanguages } from '$lib/i18n';
 	const dispatch = createEventDispatcher();
 
-	import { settings, theme } from '$lib/stores';
+	import { theme } from '$lib/stores';
 
 	const i18n = getContext('i18n');		
 

@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { DropdownMenu } from 'bits-ui';
-	import { createEventDispatcher, getContext, onMount } from 'svelte';
+	import { createEventDispatcher, getContext } from 'svelte';
 	
 	import { goto } from '$app/navigation';	
 	import { showSettings, activeUserCount, USAGE_POOL } from '$lib/stores';
