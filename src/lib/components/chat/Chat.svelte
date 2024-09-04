@@ -20,7 +20,6 @@
 		settings,
 		showSidebar,
 		WEBUI_NAME,
-		banners,
 		user,
 		socket,		
 		currentChatPage		
@@ -47,8 +46,7 @@
 		chatCompleted,		
 		chatAction		
 	} from '$lib/apis';
-
-	import Banner from '../common/Banner.svelte';
+	
 	import MessageInput from '$lib/components/chat/MessageInput.svelte';
 	import Messages from '$lib/components/chat/Messages.svelte';
 	import Navbar from '$lib/components/layout/Navbar.svelte';	
@@ -1199,35 +1197,6 @@
 			{chat}
 			{initNewChat}
 		/>
-
-		{#if $banners.length > 0 && messages.length === 0 && !$chatId && selectedModels.length <= 1}
-			<div
-				class="absolute top-[4.25rem] w-full {$showSidebar
-					? 'md:max-w-[calc(100%-260px)]'
-					: ''} {showControls ? 'lg:pr-[24rem]' : ''} z-20"
-			>
-				<div class=" flex flex-col gap-1 w-full">
-					{#each $banners.filter( (b) => (b.dismissible ? !JSON.parse(localStorage.getItem('dismissedBannerIds') ?? '[]').includes(b.id) : true) ) as banner}
-						<Banner
-							{banner}
-							on:dismiss={(e) => {
-								const bannerId = e.detail;
-
-								localStorage.setItem(
-									'dismissedBannerIds',
-									JSON.stringify(
-										[
-											bannerId,
-											...JSON.parse(localStorage.getItem('dismissedBannerIds') ?? '[]')
-										].filter((id) => $banners.find((b) => b.id === id))
-									)
-								);
-							}}
-						/>
-					{/each}
-				</div>
-			</div>
-		{/if}
 
 		<div class="flex flex-col flex-auto z-10">
 			<div

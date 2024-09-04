@@ -1,6 +1,5 @@
 import { APP_NAME } from '$lib/constants';
 import { type Writable, writable } from 'svelte/store';
-import type { Banner } from '$lib/types';
 import type { Socket } from 'socket.io-client';
 
 // Backend
@@ -29,8 +28,6 @@ export const models: Writable<Model[]> = writable([]);
 
 export const tools = writable([]);
 export const functions = writable([]);
-
-export const banners: Writable<Banner[]> = writable([]);
 
 export const settings: Writable<Settings> = writable({});
 

@@ -8,7 +8,6 @@ from datetime import datetime
 
 from typing import TypeVar, Generic
 from pydantic import BaseModel
-from typing import Optional
 
 from pathlib import Path
 import json
@@ -509,26 +508,6 @@ if "*" in CORS_ALLOW_ORIGIN:
     )
 
 validate_cors_origins(CORS_ALLOW_ORIGIN)
-
-
-class BannerModel(BaseModel):
-    id: str
-    type: str
-    title: Optional[str] = None
-    content: str
-    dismissible: bool
-    timestamp: int
-
-
-try:
-    banners = json.loads(os.environ.get("WEBUI_BANNERS", "[]"))
-    banners = [BannerModel(**banner) for banner in banners]
-except Exception as e:
-    print(f"Error loading WEBUI_BANNERS: {e}")
-    banners = []
-
-WEBUI_BANNERS = PersistentConfig("WEBUI_BANNERS", "ui.banners", banners)
-
 
 SHOW_ADMIN_DETAILS = PersistentConfig(
     "SHOW_ADMIN_DETAILS",

@@ -10,8 +10,6 @@
 	import { getModels as _getModels } from '$lib/apis';
 	import { getAllChatTags } from '$lib/apis/chats';	
 	
-
-	import { getBanners } from '$lib/apis/configs';
 	import { getUserSettings } from '$lib/apis/users';
 
 	import {
@@ -20,15 +18,13 @@
 		settings,
 		models,		
 		tags,
-		banners,						
 	} from '$lib/stores';
 
 	import SettingsModal from '$lib/components/chat/SettingsModal.svelte';
 	import Sidebar from '$lib/components/layout/Sidebar.svelte';	
 	import AccountPending from '$lib/components/layout/Overlay/AccountPending.svelte';
 	
-	import { page } from '$app/stores';
-
+	
 	const i18n = getContext('i18n');
 
 	let loaded = false;
@@ -85,10 +81,6 @@
 					models.set(await getModels());
 				})(),			
 				
-				
-				(async () => {
-					banners.set(await getBanners(localStorage.token));
-				})(),
 				(async () => {
 					tags.set(await getAllChatTags(localStorage.token));
 				})()
