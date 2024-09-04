@@ -52,7 +52,6 @@ from config import (
     GLOBAL_LOG_LEVEL,
     SRC_LOG_LEVELS,
     WEBUI_BUILD_HASH,
-    ENABLE_ADMIN_CHAT_ACCESS,
     AppConfig,
     CORS_ALLOW_ORIGIN,
 )
@@ -335,14 +334,6 @@ async def get_app_config(request: Request):
             "auth_trusted_header": bool(webui_app.state.AUTH_TRUSTED_EMAIL_HEADER),
             "enable_signup": webui_app.state.config.ENABLE_SIGNUP,
             "enable_login_form": webui_app.state.config.ENABLE_LOGIN_FORM,
-            **(
-                {
-                    "enable_message_rating": webui_app.state.config.ENABLE_MESSAGE_RATING,
-                    "enable_admin_chat_access": ENABLE_ADMIN_CHAT_ACCESS,
-                }
-                if user is not None
-                else {}
-            ),
         },
         **(
             {

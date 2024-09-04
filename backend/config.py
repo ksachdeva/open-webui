@@ -462,18 +462,6 @@ USER_PERMISSIONS = PersistentConfig(
     },
 )
 
-ENABLE_ADMIN_EXPORT = os.environ.get("ENABLE_ADMIN_EXPORT", "True").lower() == "true"
-
-ENABLE_ADMIN_CHAT_ACCESS = (
-    os.environ.get("ENABLE_ADMIN_CHAT_ACCESS", "True").lower() == "true"
-)
-
-ENABLE_MESSAGE_RATING = PersistentConfig(
-    "ENABLE_MESSAGE_RATING",
-    "ui.enable_message_rating",
-    os.environ.get("ENABLE_MESSAGE_RATING", "True").lower() == "true",
-)
-
 
 def validate_cors_origins(origins):
     for origin in origins:
