@@ -23,8 +23,7 @@
 		banners,
 		user,
 		socket,		
-		currentChatPage,
-		temporaryChatEnabled
+		currentChatPage		
 	} from '$lib/stores';
 	import {
 		convertMessagesToHistory,
@@ -241,10 +240,6 @@
 					await initNewChat();
 				}
 			});
-		} else {
-			if ($temporaryChatEnabled) {
-				await goto('/');
-			}
 		}
 	});
 
@@ -420,19 +415,17 @@
 			}
 		}
 
-		if ($chatId == chatId) {
-			if (!$temporaryChatEnabled) {
-				chat = await updateChatById(localStorage.token, chatId, {
-					models: selectedModels,
-					messages: messages,
-					history: history,
-					params: params,
-					files: chatFiles
-				});
+		if ($chatId == chatId) {			
+			chat = await updateChatById(localStorage.token, chatId, {
+				models: selectedModels,
+				messages: messages,
+				history: history,
+				params: params,
+				files: chatFiles
+			});
 
-				currentChatPage.set(1);
-				await chats.set(await getChatList(localStorage.token, $currentChatPage));
-			}
+			currentChatPage.set(1);
+			await chats.set(await getChatList(localStorage.token, $currentChatPage));			
 		}
 	};
 
@@ -469,19 +462,17 @@
 			}
 		}
 
-		if ($chatId == chatId) {
-			if (!$temporaryChatEnabled) {
-				chat = await updateChatById(localStorage.token, chatId, {
-					models: selectedModels,
-					messages: messages,
-					history: history,
-					params: params,
-					files: chatFiles
-				});
+		if ($chatId == chatId) {			
+			chat = await updateChatById(localStorage.token, chatId, {
+				models: selectedModels,
+				messages: messages,
+				history: history,
+				params: params,
+				files: chatFiles
+			});
 
-				currentChatPage.set(1);
-				await chats.set(await getChatList(localStorage.token, $currentChatPage));
-			}
+			currentChatPage.set(1);
+			await chats.set(await getChatList(localStorage.token, $currentChatPage));			
 		}
 	};
 
@@ -642,26 +633,23 @@
 		await tick();
 
 		// Create new chat if only one message in messages
-		if (newChat && messages.length == 2) {
-			if (!$temporaryChatEnabled) {
-				chat = await createNewChat(localStorage.token, {
-					id: $chatId,
-					title: $i18n.t('New Chat'),
-					models: selectedModels,
-					system: $settings.system ?? undefined,
-					params: params,
-					messages: messages,
-					history: history,
-					tags: [],
-					timestamp: Date.now()
-				});
+		if (newChat && messages.length == 2) {			
+			chat = await createNewChat(localStorage.token, {
+				id: $chatId,
+				title: $i18n.t('New Chat'),
+				models: selectedModels,
+				system: $settings.system ?? undefined,
+				params: params,
+				messages: messages,
+				history: history,
+				tags: [],
+				timestamp: Date.now()
+			});
 
-				currentChatPage.set(1);
-				await chats.set(await getChatList(localStorage.token, $currentChatPage));
-				await chatId.set(chat.id);
-			} else {
-				await chatId.set('local');
-			}
+			currentChatPage.set(1);
+			await chats.set(await getChatList(localStorage.token, $currentChatPage));
+			await chatId.set(chat.id);
+			 
 			await tick();
 		}
 
@@ -1125,13 +1113,10 @@
 		if (_chatId === $chatId) {
 			title = _title;
 		}
-
-		if (!$temporaryChatEnabled) {
-			chat = await updateChatById(localStorage.token, _chatId, { title: _title });
-
-			currentChatPage.set(1);
-			await chats.set(await getChatList(localStorage.token, $currentChatPage));
-		}
+		
+		chat = await updateChatById(localStorage.token, _chatId, { title: _title });
+		currentChatPage.set(1);
+		await chats.set(await getChatList(localStorage.token, $currentChatPage));		
 	};
 
 
@@ -1142,19 +1127,17 @@
 	};
 
 	const saveChatHandler = async (_chatId) => {
-		if ($chatId == _chatId) {
-			if (!$temporaryChatEnabled) {
-				chat = await updateChatById(localStorage.token, _chatId, {
-					messages: messages,
-					history: history,
-					models: selectedModels,
-					params: params,
-					files: chatFiles
-				});
+		if ($chatId == _chatId) {			
+			chat = await updateChatById(localStorage.token, _chatId, {
+				messages: messages,
+				history: history,
+				models: selectedModels,
+				params: params,
+				files: chatFiles
+			});
 
-				currentChatPage.set(1);
-				await chats.set(await getChatList(localStorage.token, $currentChatPage));
-			}
+			currentChatPage.set(1);
+			await chats.set(await getChatList(localStorage.token, $currentChatPage));			
 		}
 	};
 	

@@ -20,8 +20,7 @@
 		settings,
 		models,		
 		tags,
-		banners,				
-		temporaryChatEnabled
+		banners,						
 	} from '$lib/stores';
 
 	import SettingsModal from '$lib/components/chat/SettingsModal.svelte';
@@ -158,11 +157,7 @@
 					console.log('showShortcuts');
 					document.getElementById('show-shortcuts-button')?.click();
 				}
-			});			
-
-			if ($page.url.searchParams.get('temporary-chat') === 'true') {
-				temporaryChatEnabled.set(true);
-			}
+			});						
 
 			await tick();
 		}

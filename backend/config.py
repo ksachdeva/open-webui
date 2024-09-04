@@ -451,9 +451,6 @@ USER_PERMISSIONS_CHAT_EDITING = (
     os.environ.get("USER_PERMISSIONS_CHAT_EDITING", "True").lower() == "true"
 )
 
-USER_PERMISSIONS_CHAT_TEMPORARY = (
-    os.environ.get("USER_PERMISSIONS_CHAT_TEMPORARY", "True").lower() == "true"
-)
 
 USER_PERMISSIONS = PersistentConfig(
     "USER_PERMISSIONS",
@@ -462,7 +459,6 @@ USER_PERMISSIONS = PersistentConfig(
         "chat": {
             "deletion": USER_PERMISSIONS_CHAT_DELETION,
             "editing": USER_PERMISSIONS_CHAT_EDITING,
-            "temporary": USER_PERMISSIONS_CHAT_TEMPORARY,
         }
     },
 )

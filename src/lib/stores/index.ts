@@ -37,7 +37,6 @@ export const settings: Writable<Settings> = writable({});
 export const showSidebar = writable(false);
 export const showSettings = writable(false);
 
-export const temporaryChatEnabled = writable(false);
 export const scrollPaginationEnabled = writable(false);
 export const currentChatPage = writable(1);
 

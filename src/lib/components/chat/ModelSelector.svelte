@@ -42,10 +42,7 @@
 							value: model.id,
 							label: model.name,
 							model: model
-						}))}
-						showTemporaryChatControl={$user.role === 'user'
-							? ($config?.permissions?.chat?.temporary ?? true)
-							: true}
+						}))}						
 						bind:value={selectedModel}
 					/>
 				</div>

@@ -12,8 +12,7 @@
 		mobile,		
 		pinnedChats,
 		scrollPaginationEnabled,
-		currentChatPage,
-		temporaryChatEnabled
+		currentChatPage,		
 	} from '$lib/stores';
 	import { onMount, getContext, tick } from 'svelte';
 
@@ -333,12 +332,7 @@
 		</div>
 
 
-		<div class="relative flex flex-col flex-1 overflow-y-auto">
-			{#if $temporaryChatEnabled}
-				<div
-					class="absolute z-40 w-full h-full bg-gray-50/90 dark:bg-black/90 flex justify-center"
-				></div>
-			{/if}
+		<div class="relative flex flex-col flex-1 overflow-y-auto">			
 
 			<div class="px-2 mt-0.5 mb-2 flex justify-center space-x-2">
 				<div class="flex w-full rounded-xl" id="chat-search">
