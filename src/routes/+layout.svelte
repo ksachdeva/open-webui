@@ -1,30 +1,23 @@
 <script>
-	import { io } from 'socket.io-client';
 	
 	import { onMount, tick, setContext } from 'svelte';
 	import {
 		config,
-		user,
 		theme,
 		WEBUI_NAME,
 		mobile,
-		socket,
-		activeUserCount,
-		USAGE_POOL
 	} from '$lib/stores';
 	import { goto } from '$app/navigation';
-	import { page } from '$app/stores';
-	import { Toaster, toast } from 'svelte-sonner';
+	import { Toaster } from 'svelte-sonner';
 
 	import { getBackendConfig } from '$lib/apis';
-	import { getSessionUser } from '$lib/apis/auths';
-
+	
 	import '../tailwind.css';
 	import '../app.css';
 
 	import 'tippy.js/dist/tippy.css';
 
-	import { WEBUI_BASE_URL, WEBUI_HOSTNAME } from '$lib/constants';
+	import { WEBUI_BASE_URL } from '$lib/constants';
 	import i18n, { initI18n, getLanguages } from '$lib/i18n';
 	import { bestMatchingLanguage } from '$lib/utils';
 
@@ -73,72 +66,7 @@
 			// Save Backend Status to Store
 			await config.set(backendConfig);
 			await WEBUI_NAME.set(backendConfig.name);
-
-			if ($config) {
-				const _socket = io(`${WEBUI_BASE_URL}` || undefined, {
-					reconnection: true,
-					reconnectionDelay: 1000,
-					reconnectionDelayMax: 5000,
-					randomizationFactor: 0.5,
-					path: '/ws/socket.io',
-					auth: { token: localStorage.token }
-				});
-
-				_socket.on('connect', () => {
-					console.log('connected');
-				});
-
-				_socket.on('reconnect_attempt', (attempt) => {
-					console.log('reconnect_attempt', attempt);
-				});
-
-				_socket.on('reconnect_failed', () => {
-					console.log('reconnect_failed');
-				});
-
-				_socket.on('disconnect', (reason, details) => {
-					console.log(`Socket ${socket.id} disconnected due to ${reason}`);
-					if (details) {
-						console.log('Additional details:', details);
-					}
-				});
-
-				await socket.set(_socket);
-
-				_socket.on('user-count', (data) => {
-					console.log('user-count', data);
-					activeUserCount.set(data.count);
-				});
-
-				_socket.on('usage', (data) => {
-					console.log('usage', data);
-					USAGE_POOL.set(data['models']);
-				});
-
-				if (localStorage.token) {
-					// Get Session User Info
-					const sessionUser = await getSessionUser(localStorage.token).catch((error) => {
-						toast.error(error);
-						return null;
-					});
-
-					if (sessionUser) {
-						// Save Session User to Store
-						await user.set(sessionUser);
-						await config.set(await getBackendConfig());
-					} else {
-						// Redirect Invalid Session User to /auth Page
-						localStorage.removeItem('token');
-						await goto('/auth');
-					}
-				} else {
-					// Don't redirect if we're already on the auth page
-					// Needed because we pass in tokens from OAuth logins via URL fragments
-					if ($page.url.pathname !== '/auth') {
-						await goto('/auth');
-					}
-				}
-			}
+			
 		} else {
 			// Redirect to /error when Backend Not Detected
 			await goto(`/error`);

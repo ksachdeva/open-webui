@@ -19,7 +19,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import StreamingResponse, Response
 
 
-from apps.socket.main import app as socket_app, get_event_emitter, get_event_call
 from apps.ollama.main import (
     app as ollama_app,
     get_all_models as get_ollama_models,
@@ -197,21 +196,9 @@ class ChatCompletionMiddleware(BaseHTTPMiddleware):
         }
         body["metadata"] = metadata
 
-        extra_params = {
-            "__event_emitter__": get_event_emitter(metadata),
-            "__event_call__": get_event_call(metadata),
-            "__user__": {
-                "id": user.id,
-                "email": user.email,
-                "name": user.name,
-                "role": user.role,
-            },
-        }
-
         # Initialize data_items to store additional data to be sent to the client
         # Initalize contexts and citation
         data_items = []
-        contexts = []
         citations = []
 
         metadata = {
@@ -295,7 +282,6 @@ async def check_url(request: Request, call_next):
     return response
 
 
-app.mount("/ws", socket_app)
 app.mount("/ollama", ollama_app)
 app.mount("/api/v1", webui_app)
 

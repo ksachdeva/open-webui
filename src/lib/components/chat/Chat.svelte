@@ -21,7 +21,6 @@
 		showSidebar,
 		WEBUI_NAME,
 		user,
-		socket,		
 		currentChatPage		
 	} from '$lib/stores';
 	import {
@@ -230,7 +229,6 @@
 
 	onMount(async () => {
 		window.addEventListener('message', onMessageHandler);
-		$socket?.on('chat-events', chatEventHandler);
 
 		if (!$chatId) {
 			chatIdUnsubscriber = chatId.subscribe(async (value) => {
@@ -244,7 +242,7 @@
 	onDestroy(() => {
 		chatIdUnsubscriber?.();
 		window.removeEventListener('message', onMessageHandler);
-		$socket?.off('chat-events');
+		
 	});
 
 	//////////////////////////
@@ -391,7 +389,6 @@
 				timestamp: m.timestamp
 			})),
 			chat_id: chatId,
-			session_id: $socket?.id,
 			id: responseMessageId
 		}).catch((error) => {
 			toast.error(error);
@@ -439,7 +436,6 @@
 			})),
 			...(event ? { event: event } : {}),
 			chat_id: chatId,
-			session_id: $socket?.id,
 			id: responseMessageId
 		}).catch((error) => {
 			toast.error(error);
@@ -472,16 +468,6 @@
 			currentChatPage.set(1);
 			await chats.set(await getChatList(localStorage.token, $currentChatPage));			
 		}
-	};
-
-	const getChatEventEmitter = async (modelId: string, chatId: string = '') => {
-		return setInterval(() => {
-			$socket?.emit('usage', {
-				action: 'chat',
-				model: modelId,
-				chat_id: chatId
-			});
-		}, 1000);
 	};
 
 	//////////////////////////
@@ -680,7 +666,7 @@
 					
 					responseMessage.userContext = userContext;
 
-					const chatEventEmitter = await getChatEventEmitter(model.id, _chatId);
+					//const chatEventEmitter = await getChatEventEmitter(model.id, _chatId);
 					
 
 					let _response = null;
@@ -691,7 +677,7 @@
 					}
 					_responses.push(_response);
 
-					if (chatEventEmitter) clearInterval(chatEventEmitter);
+					//if (chatEventEmitter) clearInterval(chatEventEmitter);
 				} else {
 					toast.error($i18n.t(`Model {{modelId}} not found`, { modelId }));
 				}
@@ -825,7 +811,6 @@
 			keep_alive: $settings.keepAlive ?? undefined,
 			tool_ids: selectedToolIds.length > 0 ? selectedToolIds : undefined,
 			files: files.length > 0 ? files : undefined,
-			session_id: $socket?.id,
 			chat_id: $chatId,
 			id: responseMessageId
 		});
