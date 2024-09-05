@@ -3,7 +3,6 @@ from fastapi import Depends, HTTPException, status
 from fastapi.responses import Response
 
 from fastapi import APIRouter
-import uuid
 
 from apps.webui.models.auths import (
     SigninForm,

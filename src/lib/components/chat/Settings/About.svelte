@@ -1,6 +1,6 @@
 <script lang="ts">	
 	import { getOllamaVersion } from '$lib/apis/ollama';
-	import { WEBUI_BUILD_HASH, WEBUI_VERSION } from '$lib/constants';
+	import {  WEBUI_VERSION } from '$lib/constants';
 	import { WEBUI_NAME } from '$lib/stores';	
 	import { onMount, getContext } from 'svelte';
 
@@ -29,10 +29,7 @@
 			<div class="flex w-full justify-between items-center">
 				<div class="flex flex-col text-xs text-gray-700 dark:text-gray-200">
 					<div class="flex gap-1">
-						<Tooltip content={WEBUI_BUILD_HASH}>
-							v{WEBUI_VERSION}
-						</Tooltip>
-						
+						v{WEBUI_VERSION}
 					</div>
 					
 				</div>

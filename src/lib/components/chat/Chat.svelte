@@ -41,8 +41,11 @@
 	
 	import { getAndUpdateUserLocation, getUserSettings } from '$lib/apis/users';
 	import {
-		chatCompleted,		
-		chatAction		
+		chatCompleted	
+	} from '$lib/apis/ollama';
+
+	import {
+		chatAction
 	} from '$lib/apis';
 	
 	import MessageInput from '$lib/components/chat/MessageInput.svelte';

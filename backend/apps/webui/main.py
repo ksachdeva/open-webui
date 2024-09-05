@@ -42,8 +42,4 @@ app.include_router(utils.router, prefix="/utils", tags=["utils"])
 
 @app.get("/")
 async def get_status():
-    return {
-        "status": True,
-        "auth": WEBUI_AUTH,
-        "default_prompt_suggestions": app.state.DEFAULT_PROMPT_SUGGESTIONS,
-    }
+    return {"status": True, "auth": WEBUI_AUTH}

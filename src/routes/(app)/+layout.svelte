@@ -7,7 +7,7 @@
 
 	import { goto } from '$app/navigation';
 
-	import { getModels as _getModels } from '$lib/apis';
+	import { getModels as _getModels } from '$lib/apis/ollama';
 	
 	import { getUserSettings } from '$lib/apis/users';
 
