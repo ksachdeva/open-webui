@@ -5,11 +5,9 @@ export const APP_NAME = 'Chatty';
 
 export const WEBUI_HOSTNAME = browser ? (dev ? `${location.hostname}:8080` : ``) : '';
 export const WEBUI_BASE_URL = browser ? (dev ? `http://${WEBUI_HOSTNAME}` : ``) : ``;
-export const WEBUI_API_BASE_URL = `${WEBUI_BASE_URL}/ui`;
+export const WEBUI_API_BASE_URL = `${WEBUI_BASE_URL}`;
 
 export const OLLAMA_API_BASE_URL = `${WEBUI_BASE_URL}/ollama`;
-export const OPENAI_API_BASE_URL = `${WEBUI_BASE_URL}/openai`;
-
 
 export const WEBUI_VERSION = APP_VERSION;
 export const REQUIRED_OLLAMA_VERSION = '0.1.16';

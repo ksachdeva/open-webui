@@ -1,6 +1,5 @@
 import time
-from fastapi import FastAPI, HTTPException, Depends, status
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import HTTPException, Depends, status
 from fastapi.responses import StreamingResponse
 
 from pydantic import BaseModel
@@ -21,20 +20,14 @@ from config import (
     SRC_LOG_LEVELS,
     OLLAMA_BASE_URL,
     AIOHTTP_CLIENT_TIMEOUT,
-    CORS_ALLOW_ORIGIN,
 )
+
+from fastapi import APIRouter
 
 log = logging.getLogger(__name__)
 log.setLevel(SRC_LOG_LEVELS["OLLAMA"])
 
-app = FastAPI()
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=CORS_ALLOW_ORIGIN,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+router = APIRouter()
 
 
 async def fetch_url(url):
@@ -142,7 +135,7 @@ async def get_all_models():
     return models
 
 
-@app.get("/api/version")
+@router.get("/api/version")
 async def get_ollama_versions():
 
     url = OLLAMA_BASE_URL
@@ -177,7 +170,7 @@ class GenerateChatCompletionForm(BaseModel):
     keep_alive: Optional[Union[int, str]] = None
 
 
-@app.post("/api/chat")
+@router.post("/api/chat")
 async def generate_chat_completion(
     form_data: GenerateChatCompletionForm,
     user=Depends(get_verified_user),
@@ -194,7 +187,7 @@ async def generate_chat_completion(
     )
 
 
-@app.get("/api/models")
+@router.get("/api/models")
 async def get_models(user=Depends(get_verified_user)):
     models = await get_all_models()
 
@@ -213,7 +206,7 @@ async def get_models(user=Depends(get_verified_user)):
     return {"data": ollama_models}
 
 
-@app.post("/api/chat/completed")
+@router.post("/api/chat/completed")
 async def chat_completed(form_data: dict, user=Depends(get_verified_user)):
     data = form_data
     return data

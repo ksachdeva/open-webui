@@ -1,4 +1,4 @@
-import { WEBUI_BASE_URL } from '$lib/constants';
+import { WEBUI_BASE_URL,WEBUI_API_BASE_URL } from '$lib/constants';
 
 type ChatActionForm = {
 	model: string;
@@ -45,7 +45,7 @@ export const chatAction = async (token: string, action_id: string, body: ChatAct
 export const getBackendConfig = async () => {
 	let error = null;
 
-	const res = await fetch(`${WEBUI_BASE_URL}/api/config`, {
+	const res = await fetch(`${WEBUI_API_BASE_URL}/config`, {
 		method: 'GET',
 		credentials: 'include',
 		headers: {

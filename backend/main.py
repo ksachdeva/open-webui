@@ -1,5 +1,4 @@
 from contextlib import asynccontextmanager
-import json
 import time
 import os
 import sys
@@ -11,43 +10,38 @@ from fastapi.staticfiles import StaticFiles
 
 from fastapi import HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-
-from apps.ollama.main import app as ollama_app
-
-
-from apps.webui.main import app as webui_app
-from apps.webui.internal.db import Session
-
-
-from apps.webui.models.users import Users
-
-
-from utils.utils import (
-    get_current_user,
-    get_http_authorization_cred,
-    decode_token,
+from apps.webui.routers import (
+    auths,
+    users,
+    chats,
+    utils,
 )
+
+from apps.ollama.main import router as ollama_router
+
+from apps.webui.internal.db import Session
 
 
 from config import (
     run_migrations,
-    WEBUI_NAME,
-    WEBUI_AUTH,
     ENV,
-    VERSION,
     FRONTEND_BUILD_DIR,
     STATIC_DIR,
-    DEFAULT_LOCALE,
     GLOBAL_LOG_LEVEL,
     SRC_LOG_LEVELS,
     CORS_ALLOW_ORIGIN,
+)
+
+from config import (
+    WEBUI_AUTH,
+    WEBUI_NAME,
+    VERSION,
+    DEFAULT_LOCALE,
     ENABLE_LOGIN_FORM,
     ENABLE_SIGNUP,
 )
-
 
 logging.basicConfig(stream=sys.stdout, level=GLOBAL_LOG_LEVEL)
 log = logging.getLogger(__name__)
@@ -77,14 +71,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-
-##################################
-#
-# ChatCompletion Middleware
-#
-##################################
-
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOW_ORIGIN,
@@ -93,44 +79,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auths.router, prefix="/auths", tags=["auths"])
+app.include_router(users.router, prefix="/users", tags=["users"])
+app.include_router(chats.router, prefix="/chats", tags=["chats"])
+app.include_router(utils.router, prefix="/utils", tags=["utils"])
+app.include_router(ollama_router, prefix="/ollama", tags=["ollama"])
 
-@app.middleware("http")
-async def commit_session_after_request(request: Request, call_next):
-    response = await call_next(request)
-    log.debug("Commit session after request")
-    Session.commit()
-    return response
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
-
-@app.middleware("http")
-async def check_url(request: Request, call_next):
-    start_time = int(time.time())
-    response = await call_next(request)
-    process_time = int(time.time()) - start_time
-    response.headers["X-Process-Time"] = str(process_time)
-
-    return response
-
-
-app.mount("/ollama", ollama_app)
-app.mount("/ui", webui_app)
+if os.path.exists(FRONTEND_BUILD_DIR):
+    mimetypes.add_type("text/javascript", ".js")
+    app.mount(
+        "/",
+        SPAStaticFiles(directory=FRONTEND_BUILD_DIR, html=True),
+        name="spa-static-files",
+    )
+else:
+    log.warning(
+        f"Frontend build directory not found at '{FRONTEND_BUILD_DIR}'. Serving API only."
+    )
 
 
-##################################
-#
-# Config Endpoints
-#
-##################################
+@app.get("/")
+async def get_status():
+    return {"status": True, "auth": WEBUI_AUTH}
 
 
-@app.get("/api/config")
-async def get_app_config(request: Request):
-    user = None
-    if "token" in request.cookies:
-        token = request.cookies.get("token")
-        data = decode_token(token)
-        if data is not None and "id" in data:
-            user = Users.get_user_by_id(data["id"])
+@app.get("/config")
+async def get_app_config():
 
     return {
         "status": True,
@@ -145,7 +121,7 @@ async def get_app_config(request: Request):
     }
 
 
-@app.get("/api/version")
+@app.get("/version")
 async def get_app_version():
     return {
         "version": VERSION,
@@ -178,27 +154,18 @@ async def get_manifest_json():
     }
 
 
-@app.get("/health")
-async def healthcheck():
-    return {"status": True}
+@app.middleware("http")
+async def commit_session_after_request(request: Request, call_next):
+    response = await call_next(request)
+    log.debug("Commit session after request")
+    Session.commit()
+    return response
 
 
-@app.get("/health/db")
-async def healthcheck_with_db():
-    Session.execute(text("SELECT 1;")).all()
-    return {"status": True}
-
-
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-
-if os.path.exists(FRONTEND_BUILD_DIR):
-    mimetypes.add_type("text/javascript", ".js")
-    app.mount(
-        "/",
-        SPAStaticFiles(directory=FRONTEND_BUILD_DIR, html=True),
-        name="spa-static-files",
-    )
-else:
-    log.warning(
-        f"Frontend build directory not found at '{FRONTEND_BUILD_DIR}'. Serving API only."
-    )
+@app.middleware("http")
+async def check_url(request: Request, call_next):
+    start_time = int(time.time())
+    response = await call_next(request)
+    process_time = int(time.time()) - start_time
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
