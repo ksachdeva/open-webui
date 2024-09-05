@@ -191,7 +191,7 @@ async def signup(request: Request, response: Response, form_data: SignupForm):
         if user:
             token = create_token(
                 data={"id": user.id},
-                expires_delta=parse_duration(request.app.state.JWT_EXPIRES_IN),
+                expires_delta=parse_duration(JWT_EXPIRES_IN),
             )
 
             # Set the cookie token

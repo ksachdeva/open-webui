@@ -8,8 +8,7 @@
 	import { flyAndScale } from '$lib/utils/transitions';
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
-	import Tags from '$lib/components/chat/Tags.svelte';	
-
+	
 	const i18n = getContext('i18n');
 	
 	export let shareHandler: Function;	
@@ -132,9 +131,7 @@
 
 			<hr class="border-gray-100 dark:border-gray-800 mt-2.5 mb-1.5" />
 
-			<div class="flex p-1">
-				<Tags chatId={chat.id} />
-			</div>
+			
 		</DropdownMenu.Content>
 	</div>
 </Dropdown>

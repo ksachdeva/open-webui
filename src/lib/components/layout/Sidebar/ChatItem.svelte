@@ -9,10 +9,9 @@
 	import {		
 		cloneChatById,		
 		getChatList,
-		getChatListByTagName,
 		updateChatById
 	} from '$lib/apis/chats';
-	import { chatId, chats, mobile, pinnedChats, showSidebar, currentChatPage } from '$lib/stores';
+	import { chatId, chats, mobile, showSidebar, currentChatPage } from '$lib/stores';
 
 	import ChatMenu from './ChatMenu.svelte';
 	import ShareChatModal from '$lib/components/chat/ShareChatModal.svelte';	
@@ -39,7 +38,6 @@
 
 			currentChatPage.set(1);
 			await chats.set(await getChatList(localStorage.token, $currentChatPage));
-			await pinnedChats.set(await getChatListByTagName(localStorage.token, 'pinned'));
 		}
 	};
 
@@ -54,7 +52,6 @@
 
 			currentChatPage.set(1);
 			await chats.set(await getChatList(localStorage.token, $currentChatPage));
-			await pinnedChats.set(await getChatListByTagName(localStorage.token, 'pinned'));
 		}
 	};
 	
@@ -204,9 +201,7 @@
 					onClose={() => {
 						dispatch('unselect');
 					}}
-					on:change={async () => {
-						await pinnedChats.set(await getChatListByTagName(localStorage.token, 'pinned'));
-					}}
+					
 				>
 					<button
 						aria-label="Chat Menu"

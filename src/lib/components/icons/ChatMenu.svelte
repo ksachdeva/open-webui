@@ -7,7 +7,6 @@
 	import GarbageBin from '$lib/components/icons/GarbageBin.svelte';
 	import Pencil from '$lib/components/icons/Pencil.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
-	import Tags from '$lib/components/chat/Tags.svelte';
 	import Share from '$lib/components/icons/Share.svelte';	
 	import DocumentDuplicate from '$lib/components/icons/DocumentDuplicate.svelte';
 	import Star from '$lib/components/icons/Star.svelte';
@@ -98,15 +97,7 @@
 
 			<hr class="border-gray-100 dark:border-gray-800 mt-2.5 mb-1.5" />
 
-			<div class="flex p-1">
-				<Tags
-					{chatId}
-					on:close={() => {
-						show = false;
-						onClose();
-					}}
-				/>
-			</div>
+			
 		</DropdownMenu.Content>
 	</div>
 </Dropdown>

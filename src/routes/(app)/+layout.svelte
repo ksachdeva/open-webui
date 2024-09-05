@@ -8,7 +8,6 @@
 	import { goto } from '$app/navigation';
 
 	import { getModels as _getModels } from '$lib/apis';
-	import { getAllChatTags } from '$lib/apis/chats';	
 	
 	import { getUserSettings } from '$lib/apis/users';
 
@@ -17,7 +16,6 @@
 		showSettings,
 		settings,
 		models,		
-		tags,
 	} from '$lib/stores';
 
 	import SettingsModal from '$lib/components/chat/SettingsModal.svelte';
@@ -79,10 +77,6 @@
 			await Promise.all([
 				(async () => {
 					models.set(await getModels());
-				})(),			
-				
-				(async () => {
-					tags.set(await getAllChatTags(localStorage.token));
 				})()
 			]);
 

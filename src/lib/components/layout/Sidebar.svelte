@@ -5,12 +5,9 @@
 		user,
 		chats,
 		settings,
-		showSettings,
 		chatId,
-		tags,
 		showSidebar,
 		mobile,		
-		pinnedChats,
 		scrollPaginationEnabled,
 		currentChatPage,		
 	} from '$lib/stores';
@@ -23,10 +20,6 @@
 		deleteChatById,
 		getChatList,
 		getChatById,
-		getChatListByTagName,
-		updateChatById,
-		getAllChatTags,		
-		cloneChatById
 	} from '$lib/apis/chats';
 	import { WEBUI_BASE_URL } from '$lib/constants';
 	
@@ -110,7 +103,6 @@
 		});
 
 		showSidebar.set(window.innerWidth > BREAKPOINT);
-		await pinnedChats.set(await getChatListByTagName(localStorage.token, 'pinned'));
 		await enablePagination();
 
 		let touchstart;
@@ -217,7 +209,7 @@
 			currentChatPage.set(1);
 			await chats.set(await getChatList(localStorage.token, $currentChatPage));
 
-			await pinnedChats.set(await getChatListByTagName(localStorage.token, 'pinned'));
+			
 		}
 	};
 </script>
@@ -365,70 +357,7 @@
 				</div>
 			</div>
 
-			{#if $tags.filter((t) => t.name !== 'pinned').length > 0}
-				<div class="px-2.5 mb-2 flex gap-1 flex-wrap">
-					<button
-						class="px-2.5 text-xs font-medium bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition rounded-full"
-						on:click={async () => {
-							await enablePagination();
-						}}
-					>
-						{$i18n.t('all')}
-					</button>
-					{#each $tags.filter((t) => t.name !== 'pinned') as tag}
-						<button
-							class="px-2.5 text-xs font-medium bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-800 transition rounded-full"
-							on:click={async () => {
-								scrollPaginationEnabled.set(false);
-								let chatIds = await getChatListByTagName(localStorage.token, tag.name);
-								if (chatIds.length === 0) {
-									await tags.set(await getAllChatTags(localStorage.token));
-
-									// if the tag we deleted is no longer a valid tag, return to main chat list view
-									await enablePagination();
-								}
-								await chats.set(chatIds);
-
-								chatListLoading = false;
-							}}
-						>
-							{tag.name}
-						</button>
-					{/each}
-				</div>
-			{/if}
-
-			{#if $pinnedChats.length > 0}
-				<div class="pl-2 py-2 flex flex-col space-y-1">
-					<div class="">
-						<div class="w-full pl-2.5 text-xs text-gray-500 dark:text-gray-500 font-medium pb-1.5">
-							{$i18n.t('Pinned')}
-						</div>
-
-						{#each $pinnedChats as chat, idx}
-							<ChatItem
-								{chat}
-								{shiftKey}
-								selected={selectedChatId === chat.id}
-								on:select={() => {
-									selectedChatId = chat.id;
-								}}
-								on:unselect={() => {
-									selectedChatId = null;
-								}}
-								on:delete={(e) => {
-									if ((e?.detail ?? '') === 'shift') {
-										deleteChatHandler(chat.id);
-									} else {
-										deleteChat = chat;
-										showDeleteConfirm = true;
-									}
-								}}
-							/>
-						{/each}
-					</div>
-				</div>
-			{/if}
+			
 
 			<div class="pl-2 my-2 flex-1 flex flex-col space-y-1 overflow-y-auto scrollbar-hidden">
 				{#each filteredChatList as chat, idx}

@@ -1,21 +1,18 @@
 <script lang="ts">
 	import { DropdownMenu } from 'bits-ui';
 	import { flyAndScale } from '$lib/utils/transitions';
-	import { getContext, createEventDispatcher } from 'svelte';
+	import { getContext } from 'svelte';
 
-	const dispatch = createEventDispatcher();
 
 	import Dropdown from '$lib/components/common/Dropdown.svelte';
 	import GarbageBin from '$lib/components/icons/GarbageBin.svelte';
 	import Pencil from '$lib/components/icons/Pencil.svelte';
 	import Tooltip from '$lib/components/common/Tooltip.svelte';
-	import Tags from '$lib/components/chat/Tags.svelte';
 	import Share from '$lib/components/icons/Share.svelte';	
 	import DocumentDuplicate from '$lib/components/icons/DocumentDuplicate.svelte';
 	import Bookmark from '$lib/components/icons/Bookmark.svelte';
 	import BookmarkSlash from '$lib/components/icons/BookmarkSlash.svelte';
-	import { addTagById, deleteTagById, getTagsById } from '$lib/apis/chats';
-
+	
 	const i18n = getContext('i18n');
 
 	export let shareHandler: Function;
@@ -27,28 +24,7 @@
 	export let chatId = '';
 
 	let show = false;
-	let pinned = false;
-
-	const pinHandler = async () => {
-		if (pinned) {
-			await deleteTagById(localStorage.token, chatId, 'pinned');
-		} else {
-			await addTagById(localStorage.token, chatId, 'pinned');
-		}
-		dispatch('change');
-	};
-
-	const checkPinned = async () => {
-		pinned = (
-			await getTagsById(localStorage.token, chatId).catch(async (error) => {
-				return [];
-			})
-		).find((tag) => tag.name === 'pinned');
-	};
-
-	$: if (show) {
-		checkPinned();
-	}
+	
 </script>
 
 <Dropdown
@@ -71,21 +47,6 @@
 			align="start"
 			transition={flyAndScale}
 		>
-			<DropdownMenu.Item
-				class="flex gap-2 items-center px-3 py-2 text-sm  font-medium cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md"
-				on:click={() => {
-					pinHandler();
-				}}
-			>
-				{#if pinned}
-					<BookmarkSlash strokeWidth="2" />
-					<div class="flex items-center">{$i18n.t('Unpin')}</div>
-				{:else}
-					<Bookmark strokeWidth="2" />
-					<div class="flex items-center">{$i18n.t('Pin')}</div>
-				{/if}
-			</DropdownMenu.Item>
-
 			<DropdownMenu.Item
 				class="flex gap-2 items-center px-3 py-2 text-sm  font-medium cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md"
 				on:click={() => {
@@ -126,17 +87,7 @@
 				<div class="flex items-center">{$i18n.t('Delete')}</div>
 			</DropdownMenu.Item>
 
-			<hr class="border-gray-100 dark:border-gray-800 mt-2.5 mb-1.5" />
-
-			<div class="flex p-1">
-				<Tags
-					{chatId}
-					on:close={() => {
-						show = false;
-						onClose();
-					}}
-				/>
-			</div>
+			
 		</DropdownMenu.Content>
 	</div>
 </Dropdown>

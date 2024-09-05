@@ -36,7 +36,6 @@
 		createNewChat,
 		getChatById,
 		getChatList,
-		getTagsById,
 		updateChatById
 	} from '$lib/apis/chats';
 	
@@ -82,8 +81,7 @@
 	let selectedToolIds = [];	
 
 	let chat = null;
-	let tags = [];
-
+	
 	let title = '';
 	let prompt = '';
 
@@ -316,7 +314,6 @@
 		});
 
 		if (chat) {
-			tags = await getTags();
 			const chatContent = chat.chat;
 
 			if (chatContent) {
@@ -626,7 +623,6 @@
 				params: params,
 				messages: messages,
 				history: history,
-				tags: [],
 				timestamp: Date.now()
 			});
 
@@ -1102,12 +1098,6 @@
 		await chats.set(await getChatList(localStorage.token, $currentChatPage));		
 	};
 
-
-	const getTags = async () => {
-		return await getTagsById(localStorage.token, $chatId).catch(async (error) => {
-			return [];
-		});
-	};
 
 	const saveChatHandler = async (_chatId) => {
 		if ($chatId == _chatId) {			
