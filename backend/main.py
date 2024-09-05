@@ -20,7 +20,6 @@ from starlette.responses import StreamingResponse
 from apps.ollama.main import (
     app as ollama_app,
     get_all_models as get_ollama_models,
-    generate_openai_chat_completion as generate_ollama_chat_completion,
 )
 
 
@@ -50,9 +49,7 @@ from config import (
     DEFAULT_LOCALE,
     GLOBAL_LOG_LEVEL,
     SRC_LOG_LEVELS,
-    WEBUI_BUILD_HASH,
     CORS_ALLOW_ORIGIN,
-    DEFAULT_PROMPT_SUGGESTIONS,
     ENABLE_LOGIN_FORM,
     ENABLE_SIGNUP,
 )
@@ -72,15 +69,6 @@ class SPAStaticFiles(StaticFiles):
                 return await super().get_response("index.html", scope)
             else:
                 raise ex
-
-
-print(
-    rf"""
-v{VERSION} - building the best open-source AI user interface.
-{f"Commit: {WEBUI_BUILD_HASH}" if WEBUI_BUILD_HASH != "dev-build" else ""}
-https://github.com/open-webui/open-webui
-"""
-)
 
 
 @asynccontextmanager
@@ -273,26 +261,6 @@ async def get_models(user=Depends(get_verified_user)):
     return {"data": models}
 
 
-@app.post("/api/chat/completions")
-async def generate_chat_completions(form_data: dict, user=Depends(get_verified_user)):
-    model_id = form_data["model"]
-
-    if model_id not in app.state.MODELS:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Model not found",
-        )
-
-    model = app.state.MODELS[model_id]
-    if model["owned_by"] == "ollama":
-        return await generate_ollama_chat_completion(form_data, user=user)
-    else:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Model not found",
-        )
-
-
 @app.post("/api/chat/completed")
 async def chat_completed(form_data: dict, user=Depends(get_verified_user)):
     data = form_data
@@ -332,11 +300,6 @@ async def get_app_config(request: Request):
             "enable_signup": ENABLE_SIGNUP,
             "enable_login_form": ENABLE_LOGIN_FORM,
         },
-        **(
-            {"default_prompt_suggestions": DEFAULT_PROMPT_SUGGESTIONS}
-            if user is not None
-            else {}
-        ),
     }
 
 

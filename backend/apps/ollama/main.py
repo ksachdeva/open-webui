@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 
 
 import re
@@ -10,12 +10,10 @@ import json
 import aiohttp
 import asyncio
 import logging
-import time
 from typing import Optional, Union
 
 from starlette.background import BackgroundTask
 
-from constants import ERROR_MESSAGES
 from utils.utils import get_verified_user
 
 
@@ -182,45 +180,6 @@ async def get_ollama_versions():
         return {"version": lowest_version["version"]}
 
 
-class GenerateCompletionForm(BaseModel):
-    model: str
-    prompt: str
-    images: Optional[list[str]] = None
-    format: Optional[str] = None
-    options: Optional[dict] = None
-    system: Optional[str] = None
-    template: Optional[str] = None
-    context: Optional[str] = None
-    stream: Optional[bool] = True
-    raw: Optional[bool] = None
-    keep_alive: Optional[Union[int, str]] = None
-
-
-@app.post("/api/generate")
-async def generate_completion(
-    form_data: GenerateCompletionForm,
-    user=Depends(get_verified_user),
-):
-
-    model = form_data.model
-
-    if ":" not in model:
-        model = f"{model}:latest"
-
-    if model not in app.state.MODELS:
-        raise HTTPException(
-            status_code=400,
-            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(form_data.model),
-        )
-
-    url = app.state.OLLAMA_BASE_URL
-    log.info(f"url: {url}")
-
-    return await post_streaming_url(
-        f"{url}/api/generate", form_data.model_dump_json(exclude_none=True).encode()
-    )
-
-
 class ChatMessage(BaseModel):
     role: str
     content: str
@@ -237,17 +196,6 @@ class GenerateChatCompletionForm(BaseModel):
     keep_alive: Optional[Union[int, str]] = None
 
 
-def get_ollama_url(model: str):
-    if model not in app.state.MODELS:
-        raise HTTPException(
-            status_code=400,
-            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(model),
-        )
-
-    url = app.state.OLLAMA_BASE_URL
-    return url
-
-
 @app.post("/api/chat")
 async def generate_chat_completion(
     form_data: GenerateChatCompletionForm,
@@ -261,72 +209,10 @@ async def generate_chat_completion(
     if ":" not in payload["model"]:
         payload["model"] = f"{payload['model']}:latest"
 
-    url = get_ollama_url(payload["model"])
+    url = OLLAMA_BASE_URL
     log.info(f"url: {url}")
     log.debug(payload)
 
     return await post_streaming_url(
         f"{url}/api/chat", json.dumps(payload), content_type="application/x-ndjson"
     )
-
-
-# TODO: we should update this part once Ollama supports other types
-class OpenAIChatMessageContent(BaseModel):
-    type: str
-    model_config = ConfigDict(extra="allow")
-
-
-class OpenAIChatMessage(BaseModel):
-    role: str
-    content: Union[str, OpenAIChatMessageContent]
-
-    model_config = ConfigDict(extra="allow")
-
-
-class OpenAIChatCompletionForm(BaseModel):
-    model: str
-    messages: list[OpenAIChatMessage]
-
-    model_config = ConfigDict(extra="allow")
-
-
-@app.post("/v1/chat/completions")
-async def generate_openai_chat_completion(
-    form_data: dict,
-    user=Depends(get_verified_user),
-):
-    completion_form = OpenAIChatCompletionForm(**form_data)
-    payload = {**completion_form.model_dump(exclude_none=True, exclude=["metadata"])}
-    if "metadata" in payload:
-        del payload["metadata"]
-
-    if ":" not in payload["model"]:
-        payload["model"] = f"{payload['model']}:latest"
-
-    url = get_ollama_url(payload["model"])
-    log.info(f"url: {url}")
-
-    return await post_streaming_url(
-        f"{url}/v1/chat/completions",
-        json.dumps(payload),
-        stream=payload.get("stream", False),
-    )
-
-
-@app.get("/v1/models")
-async def get_openai_models(
-    user=Depends(get_verified_user),
-):
-    models = await get_all_models()
-    return {
-        "data": [
-            {
-                "id": model["model"],
-                "object": "model",
-                "created": int(time.time()),
-                "owned_by": "openai",
-            }
-            for model in models["models"]
-        ],
-        "object": "list",
-    }
