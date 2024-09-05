@@ -5,7 +5,6 @@ from urllib.parse import urlparse
 from typing import TypeVar
 
 from pathlib import Path
-import requests
 import shutil
 
 
@@ -24,8 +23,6 @@ from env import (
     WEBUI_BUILD_HASH,  # keep this import
     GLOBAL_LOG_LEVEL,  # keep this import
     WEBUI_URL,  # keep this import
-    WEBUI_AUTH_TRUSTED_NAME_HEADER,  # keep this import
-    WEBUI_AUTH_TRUSTED_EMAIL_HEADER,  # keep this import
     WEBUI_NAME,  # keep this import
     WEBUI_FAVICON_URL,  # keep this import
     VERSION,  # keep this import
@@ -164,21 +161,6 @@ else:
 
 
 ####################################
-# CUSTOM_NAME
-####################################
-
-CUSTOM_NAME = os.environ.get("CUSTOM_NAME", "")
-
-
-####################################
-# Cache DIR
-####################################
-
-CACHE_DIR = f"{DATA_DIR}/cache"
-Path(CACHE_DIR).mkdir(parents=True, exist_ok=True)
-
-
-####################################
 # OLLAMA_BASE_URL
 ####################################
 
@@ -286,5 +268,4 @@ if "*" in CORS_ALLOW_ORIGIN:
 validate_cors_origins(CORS_ALLOW_ORIGIN)
 
 SHOW_ADMIN_DETAILS = os.environ.get("SHOW_ADMIN_DETAILS", "true")
-
 ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", None)

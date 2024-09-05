@@ -125,7 +125,6 @@ type Config = {
 	default_prompt_suggestions: PromptSuggestion[];
 	features: {
 		auth: boolean;
-		auth_trusted_header: boolean;
 		enable_signup: boolean;
 		enable_login_form: boolean;		
 	};

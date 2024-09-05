@@ -46,7 +46,6 @@ from config import (
     ENV,
     VERSION,
     FRONTEND_BUILD_DIR,
-    CACHE_DIR,
     STATIC_DIR,
     DEFAULT_LOCALE,
     GLOBAL_LOG_LEVEL,
@@ -54,7 +53,6 @@ from config import (
     WEBUI_BUILD_HASH,
     CORS_ALLOW_ORIGIN,
     DEFAULT_PROMPT_SUGGESTIONS,
-    WEBUI_AUTH_TRUSTED_EMAIL_HEADER,
     ENABLE_LOGIN_FORM,
     ENABLE_SIGNUP,
 )
@@ -331,7 +329,6 @@ async def get_app_config(request: Request):
         "default_locale": str(DEFAULT_LOCALE),
         "features": {
             "auth": WEBUI_AUTH,
-            "auth_trusted_header": WEBUI_AUTH_TRUSTED_EMAIL_HEADER,
             "enable_signup": ENABLE_SIGNUP,
             "enable_login_form": ENABLE_LOGIN_FORM,
         },
@@ -388,7 +385,6 @@ async def healthcheck_with_db():
 
 
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
-app.mount("/cache", StaticFiles(directory=CACHE_DIR), name="cache")
 
 if os.path.exists(FRONTEND_BUILD_DIR):
     mimetypes.add_type("text/javascript", ".js")
