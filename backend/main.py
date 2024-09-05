@@ -77,8 +77,6 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-app.state.MODELS = {}
-
 
 ##################################
 #

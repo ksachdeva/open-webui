@@ -20,11 +20,6 @@ app = FastAPI()
 
 log = logging.getLogger(__name__)
 
-
-app.state.MODELS = {}
-app.state.TOOLS = {}
-app.state.FUNCTIONS = {}
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ALLOW_ORIGIN,

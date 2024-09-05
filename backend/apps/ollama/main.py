@@ -40,18 +40,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.state.OLLAMA_BASE_URL = OLLAMA_BASE_URL
-app.state.MODELS = {}
-
-
-@app.middleware("http")
-async def check_url(request: Request, call_next):
-    if len(app.state.MODELS) == 0:
-        await get_all_models()
-
-    response = await call_next(request)
-    return response
-
 
 async def fetch_url(url):
     timeout = aiohttp.ClientTimeout(total=5)
@@ -76,7 +64,10 @@ async def cleanup_response(
 
 
 async def post_streaming_url(
-    url: str, payload: Union[str, bytes], stream: bool = True, content_type=None
+    url: str,
+    payload: Union[str, bytes],
+    stream: bool = True,
+    content_type=None,
 ):
     r = None
     try:
@@ -151,8 +142,6 @@ async def get_all_models():
             map(lambda response: response["models"] if response else None, responses)
         )
     }
-
-    app.state.MODELS = {model["model"]: model for model in models["models"]}
 
     return models
 
@@ -236,13 +225,6 @@ async def get_models(user=Depends(get_verified_user)):
 @app.post("/api/chat/completed")
 async def chat_completed(form_data: dict, user=Depends(get_verified_user)):
     data = form_data
-    model_id = data["model"]
-    if model_id not in app.state.MODELS:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Model not found",
-        )
-
     return data
 
 
