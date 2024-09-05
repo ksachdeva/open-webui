@@ -3,8 +3,6 @@ from fastapi import Depends, HTTPException, status
 from fastapi.responses import Response
 
 from fastapi import APIRouter
-from pydantic import BaseModel
-import re
 import uuid
 
 from apps.webui.models.auths import (
@@ -33,6 +31,8 @@ from config import (
     WEBUI_AUTH,
     WEBUI_AUTH_TRUSTED_EMAIL_HEADER,
     WEBUI_AUTH_TRUSTED_NAME_HEADER,
+    JWT_EXPIRES_IN,
+    DEFAULT_USER_ROLE,
 )
 
 router = APIRouter()
@@ -48,7 +48,7 @@ async def get_session_user(
 ):
     token = create_token(
         data={"id": user.id},
-        expires_delta=parse_duration(request.app.state.config.JWT_EXPIRES_IN),
+        expires_delta=parse_duration(JWT_EXPIRES_IN),
     )
 
     # Set the cookie token
@@ -161,7 +161,7 @@ async def signin(request: Request, response: Response, form_data: SigninForm):
     if user:
         token = create_token(
             data={"id": user.id},
-            expires_delta=parse_duration(request.app.state.config.JWT_EXPIRES_IN),
+            expires_delta=parse_duration(JWT_EXPIRES_IN),
         )
 
         # Set the cookie token
@@ -191,14 +191,6 @@ async def signin(request: Request, response: Response, form_data: SigninForm):
 
 @router.post("/signup", response_model=SigninResponse)
 async def signup(request: Request, response: Response, form_data: SignupForm):
-    if (
-        not request.app.state.config.ENABLE_SIGNUP
-        and request.app.state.config.ENABLE_LOGIN_FORM
-        and WEBUI_AUTH
-    ):
-        raise HTTPException(
-            status.HTTP_403_FORBIDDEN, detail=ERROR_MESSAGES.ACCESS_PROHIBITED
-        )
 
     if not validate_email_format(form_data.email.lower()):
         raise HTTPException(
@@ -209,11 +201,7 @@ async def signup(request: Request, response: Response, form_data: SignupForm):
         raise HTTPException(400, detail=ERROR_MESSAGES.EMAIL_TAKEN)
 
     try:
-        role = (
-            "admin"
-            if Users.get_num_users() == 0
-            else request.app.state.config.DEFAULT_USER_ROLE
-        )
+        role = "admin" if Users.get_num_users() == 0 else DEFAULT_USER_ROLE
         hashed = get_password_hash(form_data.password)
         user = Auths.insert_new_auth(
             form_data.email.lower(),
@@ -226,7 +214,7 @@ async def signup(request: Request, response: Response, form_data: SignupForm):
         if user:
             token = create_token(
                 data={"id": user.id},
-                expires_delta=parse_duration(request.app.state.config.JWT_EXPIRES_IN),
+                expires_delta=parse_duration(request.app.state.JWT_EXPIRES_IN),
             )
 
             # Set the cookie token
@@ -294,83 +282,6 @@ async def add_user(form_data: AddUserForm, user=Depends(get_admin_user)):
             raise HTTPException(500, detail=ERROR_MESSAGES.CREATE_USER_ERROR)
     except Exception as err:
         raise HTTPException(500, detail=ERROR_MESSAGES.DEFAULT(err))
-
-
-############################
-# GetAdminDetails
-############################
-
-
-@router.get("/admin/details")
-async def get_admin_details(request: Request, user=Depends(get_current_user)):
-    if request.app.state.config.SHOW_ADMIN_DETAILS:
-        admin_email = request.app.state.config.ADMIN_EMAIL
-        admin_name = None
-
-        print(admin_email, admin_name)
-
-        if admin_email:
-            admin = Users.get_user_by_email(admin_email)
-            if admin:
-                admin_name = admin.name
-        else:
-            admin = Users.get_first_user()
-            if admin:
-                admin_email = admin.email
-                admin_name = admin.name
-
-        return {
-            "name": admin_name,
-            "email": admin_email,
-        }
-    else:
-        raise HTTPException(400, detail=ERROR_MESSAGES.ACTION_PROHIBITED)
-
-
-############################
-# ToggleSignUp
-############################
-
-
-@router.get("/admin/config")
-async def get_admin_config(request: Request, user=Depends(get_admin_user)):
-    return {
-        "SHOW_ADMIN_DETAILS": request.app.state.config.SHOW_ADMIN_DETAILS,
-        "ENABLE_SIGNUP": request.app.state.config.ENABLE_SIGNUP,
-        "DEFAULT_USER_ROLE": request.app.state.config.DEFAULT_USER_ROLE,
-        "JWT_EXPIRES_IN": request.app.state.config.JWT_EXPIRES_IN,
-    }
-
-
-class AdminConfig(BaseModel):
-    SHOW_ADMIN_DETAILS: bool
-    ENABLE_SIGNUP: bool
-    DEFAULT_USER_ROLE: str
-    JWT_EXPIRES_IN: str
-
-
-@router.post("/admin/config")
-async def update_admin_config(
-    request: Request, form_data: AdminConfig, user=Depends(get_admin_user)
-):
-    request.app.state.config.SHOW_ADMIN_DETAILS = form_data.SHOW_ADMIN_DETAILS
-    request.app.state.config.ENABLE_SIGNUP = form_data.ENABLE_SIGNUP
-
-    if form_data.DEFAULT_USER_ROLE in ["pending", "user", "admin"]:
-        request.app.state.config.DEFAULT_USER_ROLE = form_data.DEFAULT_USER_ROLE
-
-    pattern = r"^(-1|0|(-?\d+(\.\d+)?)(ms|s|m|h|d|w))$"
-
-    # Check if the input string matches the pattern
-    if re.match(pattern, form_data.JWT_EXPIRES_IN):
-        request.app.state.config.JWT_EXPIRES_IN = form_data.JWT_EXPIRES_IN
-
-    return {
-        "SHOW_ADMIN_DETAILS": request.app.state.config.SHOW_ADMIN_DETAILS,
-        "ENABLE_SIGNUP": request.app.state.config.ENABLE_SIGNUP,
-        "DEFAULT_USER_ROLE": request.app.state.config.DEFAULT_USER_ROLE,
-        "JWT_EXPIRES_IN": request.app.state.config.JWT_EXPIRES_IN,
-    }
 
 
 ############################

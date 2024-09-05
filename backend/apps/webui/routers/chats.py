@@ -1,6 +1,6 @@
 from fastapi import Depends, Request, HTTPException, status
 from typing import Optional
-from utils.utils import get_verified_user, get_admin_user
+from utils.utils import get_verified_user
 from fastapi import APIRouter
 from pydantic import BaseModel
 import json
@@ -57,40 +57,8 @@ async def get_session_user_chat_list(
 
 @router.delete("/", response_model=bool)
 async def delete_all_user_chats(request: Request, user=Depends(get_verified_user)):
-
-    if (
-        user.role == "user"
-        and not request.app.state.config.USER_PERMISSIONS["chat"]["deletion"]
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
-        )
-
     result = Chats.delete_chats_by_user_id(user.id)
     return result
-
-
-############################
-# GetUserChatList
-############################
-
-
-@router.get("/list/user/{user_id}", response_model=list[ChatTitleIdResponse])
-async def get_user_chat_list_by_user_id(
-    user_id: str,
-    user=Depends(get_admin_user),
-    skip: int = 0,
-    limit: int = 50,
-):
-    if not ENABLE_ADMIN_CHAT_ACCESS:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
-        )
-    return Chats.get_chat_list_by_user_id(
-        user_id, include_archived=True, skip=skip, limit=limit
-    )
 
 
 ############################
@@ -137,24 +105,6 @@ async def get_user_archived_chats(user=Depends(get_verified_user)):
 
 
 ############################
-# GetAllChatsInDB
-############################
-
-
-@router.get("/all/db", response_model=list[ChatResponse])
-async def get_all_user_chats_in_db(user=Depends(get_admin_user)):
-    if not ENABLE_ADMIN_EXPORT:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
-        )
-    return [
-        ChatResponse(**{**chat.model_dump(), "chat": json.loads(chat.chat)})
-        for chat in Chats.get_chats()
-    ]
-
-
-############################
 # GetArchivedChats
 ############################
 
@@ -188,10 +138,7 @@ async def get_shared_chat_by_id(share_id: str, user=Depends(get_verified_user)):
             status_code=status.HTTP_401_UNAUTHORIZED, detail=ERROR_MESSAGES.NOT_FOUND
         )
 
-    if user.role == "user" or (user.role == "admin" and not ENABLE_ADMIN_CHAT_ACCESS):
-        chat = Chats.get_chat_by_share_id(share_id)
-    elif user.role == "admin" and ENABLE_ADMIN_CHAT_ACCESS:
-        chat = Chats.get_chat_by_id(share_id)
+    chat = Chats.get_chat_by_share_id(share_id)
 
     if chat:
         return ChatResponse(**{**chat.model_dump(), "chat": json.loads(chat.chat)})
@@ -300,12 +247,6 @@ async def delete_chat_by_id(request: Request, id: str, user=Depends(get_verified
         result = Chats.delete_chat_by_id(id)
         return result
     else:
-        if not request.app.state.config.USER_PERMISSIONS["chat"]["deletion"]:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=ERROR_MESSAGES.ACCESS_PROHIBITED,
-            )
-
         result = Chats.delete_chat_by_id_and_user_id(id, user.id)
         return result
 

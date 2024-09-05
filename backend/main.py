@@ -52,8 +52,11 @@ from config import (
     GLOBAL_LOG_LEVEL,
     SRC_LOG_LEVELS,
     WEBUI_BUILD_HASH,
-    AppConfig,
     CORS_ALLOW_ORIGIN,
+    DEFAULT_PROMPT_SUGGESTIONS,
+    WEBUI_AUTH_TRUSTED_EMAIL_HEADER,
+    ENABLE_LOGIN_FORM,
+    ENABLE_SIGNUP,
 )
 
 
@@ -93,9 +96,6 @@ app = FastAPI(
     redoc_url=None,
     lifespan=lifespan,
 )
-
-app.state.config = AppConfig()
-
 
 app.state.MODELS = {}
 
@@ -331,16 +331,12 @@ async def get_app_config(request: Request):
         "default_locale": str(DEFAULT_LOCALE),
         "features": {
             "auth": WEBUI_AUTH,
-            "auth_trusted_header": bool(webui_app.state.AUTH_TRUSTED_EMAIL_HEADER),
-            "enable_signup": webui_app.state.config.ENABLE_SIGNUP,
-            "enable_login_form": webui_app.state.config.ENABLE_LOGIN_FORM,
+            "auth_trusted_header": WEBUI_AUTH_TRUSTED_EMAIL_HEADER,
+            "enable_signup": ENABLE_SIGNUP,
+            "enable_login_form": ENABLE_LOGIN_FORM,
         },
         **(
-            {
-                "default_models": webui_app.state.config.DEFAULT_MODELS,
-                "default_prompt_suggestions": webui_app.state.config.DEFAULT_PROMPT_SUGGESTIONS,
-                "permissions": {**webui_app.state.config.USER_PERMISSIONS},
-            }
+            {"default_prompt_suggestions": DEFAULT_PROMPT_SUGGESTIONS}
             if user is not None
             else {}
         ),

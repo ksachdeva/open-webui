@@ -6,8 +6,6 @@ from pydantic import BaseModel, ConfigDict
 
 
 import re
-import random
-import requests
 import json
 import aiohttp
 import asyncio
@@ -23,9 +21,8 @@ from utils.utils import get_verified_user
 
 from config import (
     SRC_LOG_LEVELS,
-    OLLAMA_BASE_URLS,
+    OLLAMA_BASE_URL,
     AIOHTTP_CLIENT_TIMEOUT,
-    AppConfig,
     CORS_ALLOW_ORIGIN,
 )
 
@@ -41,14 +38,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.state.config = AppConfig()
-app.state.config.OLLAMA_BASE_URLS = OLLAMA_BASE_URLS
+app.state.OLLAMA_BASE_URL = OLLAMA_BASE_URL
 app.state.MODELS = {}
-
-
-# TODO: Implement a more intelligent load balancing mechanism for distributing requests among multiple backend instances.
-# Current implementation uses a simple round-robin approach (random.choice). Consider incorporating algorithms like weighted round-robin,
-# least connections, or least response time for better resource utilization and performance optimization.
 
 
 @app.middleware("http")
@@ -157,7 +148,8 @@ def merge_models_lists(model_lists):
 async def get_all_models():
     log.info("get_all_models()")
 
-    tasks = [fetch_url(f"{url}/api/tags") for url in app.state.config.OLLAMA_BASE_URLS]
+    url = OLLAMA_BASE_URL
+    tasks = [fetch_url(f"{url}/api/tags")]
     responses = await asyncio.gather(*tasks)
 
     models = {
@@ -171,133 +163,23 @@ async def get_all_models():
     return models
 
 
-@app.get("/api/tags")
-@app.get("/api/tags/{url_idx}")
-async def get_ollama_tags(
-    url_idx: Optional[int] = None, user=Depends(get_verified_user)
-):
-    if url_idx is None:
-        models = await get_all_models()
-        return models
-    else:
-        url = app.state.config.OLLAMA_BASE_URLS[url_idx]
-
-        r = None
-        try:
-            r = requests.request(method="GET", url=f"{url}/api/tags")
-            r.raise_for_status()
-
-            return r.json()
-        except Exception as e:
-            log.exception(e)
-            error_detail = "Chatty: Server Connection Error"
-            if r is not None:
-                try:
-                    res = r.json()
-                    if "error" in res:
-                        error_detail = f"Ollama: {res['error']}"
-                except Exception:
-                    error_detail = f"Ollama: {e}"
-
-            raise HTTPException(
-                status_code=r.status_code if r else 500,
-                detail=error_detail,
-            )
-
-
 @app.get("/api/version")
-@app.get("/api/version/{url_idx}")
-async def get_ollama_versions(url_idx: Optional[int] = None):
+async def get_ollama_versions():
 
-    if url_idx is None:
-        # returns lowest version
-        tasks = [
-            fetch_url(f"{url}/api/version") for url in app.state.config.OLLAMA_BASE_URLS
-        ]
-        responses = await asyncio.gather(*tasks)
-        responses = list(filter(lambda x: x is not None, responses))
+    url = OLLAMA_BASE_URL
+    tasks = [fetch_url(f"{url}/api/version")]
+    responses = await asyncio.gather(*tasks)
+    responses = list(filter(lambda x: x is not None, responses))
 
-        if len(responses) > 0:
-            lowest_version = min(
-                responses,
-                key=lambda x: tuple(
-                    map(int, re.sub(r"^v|-.*", "", x["version"]).split("."))
-                ),
-            )
-
-            return {"version": lowest_version["version"]}
-        else:
-            raise HTTPException(
-                status_code=500,
-                detail=ERROR_MESSAGES.OLLAMA_NOT_FOUND,
-            )
-    else:
-        url = app.state.config.OLLAMA_BASE_URLS[url_idx]
-
-        r = None
-        try:
-            r = requests.request(method="GET", url=f"{url}/api/version")
-            r.raise_for_status()
-
-            return r.json()
-        except Exception as e:
-            log.exception(e)
-            error_detail = "Chatty: Server Connection Error"
-            if r is not None:
-                try:
-                    res = r.json()
-                    if "error" in res:
-                        error_detail = f"Ollama: {res['error']}"
-                except Exception:
-                    error_detail = f"Ollama: {e}"
-
-            raise HTTPException(
-                status_code=r.status_code if r else 500,
-                detail=error_detail,
-            )
-
-
-class ModelNameForm(BaseModel):
-    name: str
-
-
-@app.post("/api/show")
-async def show_model_info(form_data: ModelNameForm, user=Depends(get_verified_user)):
-    if form_data.name not in app.state.MODELS:
-        raise HTTPException(
-            status_code=400,
-            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(form_data.name),
+    if len(responses) > 0:
+        lowest_version = min(
+            responses,
+            key=lambda x: tuple(
+                map(int, re.sub(r"^v|-.*", "", x["version"]).split("."))
+            ),
         )
 
-    url_idx = random.choice(app.state.MODELS[form_data.name]["urls"])
-    url = app.state.config.OLLAMA_BASE_URLS[url_idx]
-    log.info(f"url: {url}")
-
-    r = requests.request(
-        method="POST",
-        url=f"{url}/api/show",
-        headers={"Content-Type": "application/json"},
-        data=form_data.model_dump_json(exclude_none=True).encode(),
-    )
-    try:
-        r.raise_for_status()
-
-        return r.json()
-    except Exception as e:
-        log.exception(e)
-        error_detail = "Chatty: Server Connection Error"
-        if r is not None:
-            try:
-                res = r.json()
-                if "error" in res:
-                    error_detail = f"Ollama: {res['error']}"
-            except Exception:
-                error_detail = f"Ollama: {e}"
-
-        raise HTTPException(
-            status_code=r.status_code if r else 500,
-            detail=error_detail,
-        )
+        return {"version": lowest_version["version"]}
 
 
 class GenerateCompletionForm(BaseModel):
@@ -315,27 +197,23 @@ class GenerateCompletionForm(BaseModel):
 
 
 @app.post("/api/generate")
-@app.post("/api/generate/{url_idx}")
 async def generate_completion(
     form_data: GenerateCompletionForm,
-    url_idx: Optional[int] = None,
     user=Depends(get_verified_user),
 ):
-    if url_idx is None:
-        model = form_data.model
 
-        if ":" not in model:
-            model = f"{model}:latest"
+    model = form_data.model
 
-        if model in app.state.MODELS:
-            url_idx = random.choice(app.state.MODELS[model]["urls"])
-        else:
-            raise HTTPException(
-                status_code=400,
-                detail=ERROR_MESSAGES.MODEL_NOT_FOUND(form_data.model),
-            )
+    if ":" not in model:
+        model = f"{model}:latest"
 
-    url = app.state.config.OLLAMA_BASE_URLS[url_idx]
+    if model not in app.state.MODELS:
+        raise HTTPException(
+            status_code=400,
+            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(form_data.model),
+        )
+
+    url = app.state.OLLAMA_BASE_URL
     log.info(f"url: {url}")
 
     return await post_streaming_url(
@@ -359,23 +237,20 @@ class GenerateChatCompletionForm(BaseModel):
     keep_alive: Optional[Union[int, str]] = None
 
 
-def get_ollama_url(url_idx: Optional[int], model: str):
-    if url_idx is None:
-        if model not in app.state.MODELS:
-            raise HTTPException(
-                status_code=400,
-                detail=ERROR_MESSAGES.MODEL_NOT_FOUND(model),
-            )
-        url_idx = random.choice(app.state.MODELS[model]["urls"])
-    url = app.state.config.OLLAMA_BASE_URLS[url_idx]
+def get_ollama_url(model: str):
+    if model not in app.state.MODELS:
+        raise HTTPException(
+            status_code=400,
+            detail=ERROR_MESSAGES.MODEL_NOT_FOUND(model),
+        )
+
+    url = app.state.OLLAMA_BASE_URL
     return url
 
 
 @app.post("/api/chat")
-@app.post("/api/chat/{url_idx}")
 async def generate_chat_completion(
     form_data: GenerateChatCompletionForm,
-    url_idx: Optional[int] = None,
     user=Depends(get_verified_user),
 ):
     payload = {**form_data.model_dump(exclude_none=True)}
@@ -383,12 +258,10 @@ async def generate_chat_completion(
     if "metadata" in payload:
         del payload["metadata"]
 
-    model_id = form_data.model
-
     if ":" not in payload["model"]:
         payload["model"] = f"{payload['model']}:latest"
 
-    url = get_ollama_url(url_idx, payload["model"])
+    url = get_ollama_url(payload["model"])
     log.info(f"url: {url}")
     log.debug(payload)
 
@@ -418,10 +291,8 @@ class OpenAIChatCompletionForm(BaseModel):
 
 
 @app.post("/v1/chat/completions")
-@app.post("/v1/chat/completions/{url_idx}")
 async def generate_openai_chat_completion(
     form_data: dict,
-    url_idx: Optional[int] = None,
     user=Depends(get_verified_user),
 ):
     completion_form = OpenAIChatCompletionForm(**form_data)
@@ -429,19 +300,10 @@ async def generate_openai_chat_completion(
     if "metadata" in payload:
         del payload["metadata"]
 
-    model_id = completion_form.model
-
-    if app.state.config.ENABLE_MODEL_FILTER:
-        if user.role == "user" and model_id not in app.state.config.MODEL_FILTER_LIST:
-            raise HTTPException(
-                status_code=403,
-                detail="Model not found",
-            )
-
     if ":" not in payload["model"]:
         payload["model"] = f"{payload['model']}:latest"
 
-    url = get_ollama_url(url_idx, payload["model"])
+    url = get_ollama_url(payload["model"])
     log.info(f"url: {url}")
 
     return await post_streaming_url(
@@ -452,70 +314,19 @@ async def generate_openai_chat_completion(
 
 
 @app.get("/v1/models")
-@app.get("/v1/models/{url_idx}")
 async def get_openai_models(
-    url_idx: Optional[int] = None,
     user=Depends(get_verified_user),
 ):
-    if url_idx is None:
-        models = await get_all_models()
-
-        if app.state.config.ENABLE_MODEL_FILTER:
-            if user.role == "user":
-                models["models"] = list(
-                    filter(
-                        lambda model: model["name"]
-                        in app.state.config.MODEL_FILTER_LIST,
-                        models["models"],
-                    )
-                )
-
-        return {
-            "data": [
-                {
-                    "id": model["model"],
-                    "object": "model",
-                    "created": int(time.time()),
-                    "owned_by": "openai",
-                }
-                for model in models["models"]
-            ],
-            "object": "list",
-        }
-
-    else:
-        url = app.state.config.OLLAMA_BASE_URLS[url_idx]
-        try:
-            r = requests.request(method="GET", url=f"{url}/api/tags")
-            r.raise_for_status()
-
-            models = r.json()
-
-            return {
-                "data": [
-                    {
-                        "id": model["model"],
-                        "object": "model",
-                        "created": int(time.time()),
-                        "owned_by": "openai",
-                    }
-                    for model in models["models"]
-                ],
-                "object": "list",
+    models = await get_all_models()
+    return {
+        "data": [
+            {
+                "id": model["model"],
+                "object": "model",
+                "created": int(time.time()),
+                "owned_by": "openai",
             }
-
-        except Exception as e:
-            log.exception(e)
-            error_detail = "Chatty: Server Connection Error"
-            if r is not None:
-                try:
-                    res = r.json()
-                    if "error" in res:
-                        error_detail = f"Ollama: {res['error']}"
-                except Exception:
-                    error_detail = f"Ollama: {e}"
-
-            raise HTTPException(
-                status_code=r.status_code if r else 500,
-                detail=error_detail,
-            )
+            for model in models["models"]
+        ],
+        "object": "list",
+    }

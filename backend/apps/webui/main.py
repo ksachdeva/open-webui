@@ -4,25 +4,11 @@ from apps.webui.routers import (
     auths,
     users,
     chats,
-    configs,
     utils,
 )
 
-
 from config import (
-    SHOW_ADMIN_DETAILS,
-    ADMIN_EMAIL,
     WEBUI_AUTH,
-    DEFAULT_MODELS,
-    DEFAULT_PROMPT_SUGGESTIONS,
-    DEFAULT_USER_ROLE,
-    ENABLE_SIGNUP,
-    ENABLE_LOGIN_FORM,
-    USER_PERMISSIONS,
-    WEBUI_AUTH_TRUSTED_EMAIL_HEADER,
-    WEBUI_AUTH_TRUSTED_NAME_HEADER,
-    JWT_EXPIRES_IN,
-    AppConfig,
     CORS_ALLOW_ORIGIN,
 )
 
@@ -33,24 +19,6 @@ import logging
 app = FastAPI()
 
 log = logging.getLogger(__name__)
-
-app.state.config = AppConfig()
-
-app.state.config.ENABLE_SIGNUP = ENABLE_SIGNUP
-app.state.config.ENABLE_LOGIN_FORM = ENABLE_LOGIN_FORM
-app.state.config.JWT_EXPIRES_IN = JWT_EXPIRES_IN
-app.state.AUTH_TRUSTED_EMAIL_HEADER = WEBUI_AUTH_TRUSTED_EMAIL_HEADER
-app.state.AUTH_TRUSTED_NAME_HEADER = WEBUI_AUTH_TRUSTED_NAME_HEADER
-
-
-app.state.config.SHOW_ADMIN_DETAILS = SHOW_ADMIN_DETAILS
-app.state.config.ADMIN_EMAIL = ADMIN_EMAIL
-
-
-app.state.config.DEFAULT_MODELS = DEFAULT_MODELS
-app.state.config.DEFAULT_PROMPT_SUGGESTIONS = DEFAULT_PROMPT_SUGGESTIONS
-app.state.config.DEFAULT_USER_ROLE = DEFAULT_USER_ROLE
-app.state.config.USER_PERMISSIONS = USER_PERMISSIONS
 
 
 app.state.MODELS = {}
@@ -66,7 +34,6 @@ app.add_middleware(
 )
 
 
-app.include_router(configs.router, prefix="/configs", tags=["configs"])
 app.include_router(auths.router, prefix="/auths", tags=["auths"])
 app.include_router(users.router, prefix="/users", tags=["users"])
 app.include_router(chats.router, prefix="/chats", tags=["chats"])
@@ -78,6 +45,5 @@ async def get_status():
     return {
         "status": True,
         "auth": WEBUI_AUTH,
-        "default_models": app.state.config.DEFAULT_MODELS,
-        "default_prompt_suggestions": app.state.config.DEFAULT_PROMPT_SUGGESTIONS,
+        "default_prompt_suggestions": app.state.DEFAULT_PROMPT_SUGGESTIONS,
     }

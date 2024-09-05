@@ -1,17 +1,6 @@
 <script lang="ts">
-	import { getAdminDetails } from '$lib/apis/auths';
-	import { onMount, tick, getContext } from 'svelte';
-
+	import { getContext } from 'svelte';
 	const i18n = getContext('i18n');
-
-	let adminDetails = null;
-
-	onMount(async () => {
-		adminDetails = await getAdminDetails(localStorage.token).catch((err) => {
-			console.error(err);
-			return null;
-		});
-	});
 </script>
 
 <div class="fixed w-full h-full flex z-[999]">
@@ -31,12 +20,6 @@
 						'To access the WebUI, please reach out to the administrator. Admins can manage user statuses from the Admin Panel.'
 					)}
 				</div>
-
-				{#if adminDetails}
-					<div class="mt-4 text-sm font-medium text-center">
-						<div>{$i18n.t('Admin')}: {adminDetails.name} ({adminDetails.email})</div>
-					</div>
-				{/if}
 
 				<div class=" mt-6 mx-auto relative group w-fit">
 					<button

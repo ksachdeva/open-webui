@@ -128,8 +128,6 @@ type Config = {
 		auth_trusted_header: boolean;
 		enable_signup: boolean;
 		enable_login_form: boolean;		
-		enable_admin_export: boolean;
-		enable_admin_chat_access: boolean;		
 	};
 	oauth: {
 		providers: {
